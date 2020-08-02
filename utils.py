@@ -2,9 +2,9 @@ from aiohttp import ClientSession
 from bunch import Bunch
 
 
-async def fetch(url):
+async def fetch(url, params=None):
     async with ClientSession() as session:
-        async with session.get(url) as r:
+        async with session.get(url, params=params) as r:
             if r.status != 200:
                 return f'Error {r.status}'
             content = await r.json()
