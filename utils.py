@@ -1,5 +1,7 @@
 from aiohttp import ClientSession
 from bunch import Bunch
+from aiogram.dispatcher import FSMContext
+from aiogram.types import Message
 
 
 async def fetch(url, params=None):
@@ -18,3 +20,13 @@ def bbunchify(x):
         return type(x)(bbunchify(v) for v in x)
     else:
         return x
+
+
+async def is_correct_command(state: FSMContext, message: Message, use_save_buttons=False) -> bool:
+    data = await state.get_data()
+    buttons = data['save_buttons'] if use_save_buttons else data['buttons']
+    if message.text.lower() not in buttons:
+        await message.reply('Неверная команда. \nПожалуйста, выберите действие, используя клавиатуру ниже.')
+        return False
+
+    return True

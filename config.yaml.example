@@ -1,2 +1,4 @@
 general:
   telegram_token: 1111111111:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+api:
+  url: http://localhost:8000/api/v1.0

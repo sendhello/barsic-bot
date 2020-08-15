@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 from aiohttp.client_exceptions import ClientConnectorError
 
 from utils import fetch
+from config import API_URI
 
 
 async def people_in_zone():
-    url = 'http://localhost:8000/api/v1.0/people-in-zone/'
+    url = f'{API_URI}/people-in-zone/'
     try:
         response = await fetch(url)
     except ClientConnectorError:
@@ -22,7 +23,7 @@ async def people_in_zone():
 
 
 async def total_report(date_from: datetime, date_to: datetime):
-    url = 'http://localhost:8000/api/v1.0/total_report/'
+    url = f'{API_URI}/total_report/'
     params = {
         'db_type': 'aqua',
         'company_id': '36',
