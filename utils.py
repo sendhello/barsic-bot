@@ -20,12 +20,3 @@ def bbunchify(x):
         return type(x)(bbunchify(v) for v in x)
     else:
         return x
-
-
-async def is_correct_command(state: FSMContext, message: Message) -> bool:
-    data = await state.get_data()
-    if message.text not in data['buttons']:
-        await message.reply('Неверная команда. \nПожалуйста, выберите действие, используя клавиатуру ниже.')
-        return False
-
-    return True

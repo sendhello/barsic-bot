@@ -14,4 +14,5 @@ class Button:
     CANCEL = 'Отменить'
     PRINT = 'Напечатать на экране'
     SAVE = 'Сохранить'
+    CHANGE_PERIOD = 'Изменить период'
     HOME = 'На главную'
