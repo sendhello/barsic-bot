@@ -1,7 +1,9 @@
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, ReplyKeyboardMarkup, KeyboardButton
-from misc import dp, bot
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import Message, BotCommand, ReplyKeyboardMarkup
+
+from constants import Button
+from misc import dp, bot
 
 
 class GeneralMenu(StatesGroup):
@@ -11,10 +13,10 @@ class GeneralMenu(StatesGroup):
 @dp.message_handler(commands='start', state='*')
 async def start_command(message: Message, state: FSMContext):
     rkb = ReplyKeyboardMarkup(row_width=1)
-    buttons = ['Отчеты', 'Помощь', 'Установить команды']
+    buttons = [Button.REPORTS, Button.HELP, Button.SET_COMMANDS]
     rkb.add(*buttons)
     await message.answer('Выберите действие из меню', reply_markup=rkb)
-    await state.update_data(buttons=list(map(str.lower, buttons)))
+    await state.update_data(buttons=buttons)
     await GeneralMenu.main_menu_state.set()
 
 
@@ -27,8 +29,8 @@ async def help_command(message: Message):
 @dp.message_handler(commands='set_commands', state='*')
 async def set_commands(message: Message):
     commands = [
-        BotCommand(command="/start", description="Старт"),
-        BotCommand(command="/help", description="Помощь"),
+        BotCommand(command="/start", description=Button.START),
+        BotCommand(command="/help", description=Button.HELP),
         # BotCommand(command="/food", description="Заказать блюда")
     ]
     await message.answer('Команды установлены. \nДля отображения списка комманд перезапустите приложение телеграм')

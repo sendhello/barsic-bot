@@ -22,10 +22,9 @@ def bbunchify(x):
         return x
 
 
-async def is_correct_command(state: FSMContext, message: Message, use_save_buttons=False) -> bool:
+async def is_correct_command(state: FSMContext, message: Message) -> bool:
     data = await state.get_data()
-    buttons = data['save_buttons'] if use_save_buttons else data['buttons']
-    if message.text.lower() not in buttons:
+    if message.text not in data['buttons']:
         await message.reply('Неверная команда. \nПожалуйста, выберите действие, используя клавиатуру ниже.')
         return False
 
