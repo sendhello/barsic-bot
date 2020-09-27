@@ -21,8 +21,8 @@ async def reports_menu_state(message: Message, state: FSMContext):
 @dp.message_handler(lambda message: message.text == Button.CHANGE_PERIOD, state=ReportsStates.set_period_state)
 @dp.message_handler(lambda message: message.text == Button.CHANGE_PERIOD, state=ReportsStates.choose_date_from_state)
 @dp.message_handler(lambda message: message.text == Button.CHANGE_PERIOD, state=ReportsStates.choose_date_to_state)
-@dp.message_handler(lambda message: message.text in [Button.TOTAL_REPORT, Button.SUM_REPORT],
-                    state=ReportsStates.reports_menu_state)
+@dp.message_handler(
+    lambda message: message.text in [Button.TOTAL_REPORT, Button.SUM_REPORT], state=ReportsStates.reports_menu_state)
 async def choose_period_state(message: Message, state: FSMContext):
     await ReportsStates.choose_period_state.set()
 

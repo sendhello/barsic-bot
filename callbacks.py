@@ -8,8 +8,12 @@ from config import API_URI
 
 async def people_in_zone():
     url = f'{API_URI}/people-in-zone/'
+    params = {
+        'db_type': 'aqua'
+    }
+
     try:
-        response = await fetch(url)
+        response = await fetch(url, params)
     except ClientConnectorError:
         return 'Сервер не доступен'
 
@@ -23,12 +27,12 @@ async def people_in_zone():
 
 
 async def total_report(date_from: datetime, date_to: datetime):
-    url = f'{API_URI}/total_report/'
+    url = f'{API_URI}/total-report/'
     params = {
         'db_type': 'aqua',
         'company_id': '36',
-        'date_from': date_from.strftime('%Y%m%d'),
-        'date_to': date_to.strftime('%Y%m%d')
+        'date_from': date_from.strftime('%Y-%m-%d'),
+        'date_to': date_to.strftime('%Y-%m-%d')
     }
     try:
         response = await fetch(url, params)

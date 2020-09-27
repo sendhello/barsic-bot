@@ -8,9 +8,13 @@ async def fetch(url, params=None):
     async with ClientSession() as session:
         async with session.get(url, params=params) as r:
             if r.status != 200:
-                return f'Error {r.status}'
-            content = await r.json()
-    return content
+                return {
+                    'status': 'error',
+                    'errors': [f'Response status {r.status}'],
+                    'data': None
+                }
+            response = await r.json()
+    return response
 
 
 def bbunchify(x):

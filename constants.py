@@ -2,7 +2,7 @@ class Button:
     START = 'Старт'
     HELP = 'Помощь'
     REPORTS = 'Отчеты'
-    SET_COMMANDS = 'Установить команды'
+    SET_COMMANDS = 'Обновить команды'
     PEOPLE_IN_ZONE = 'Люди в зоне'
     TOTAL_REPORT = 'Итоговый отчет'
     SUM_REPORT = 'Суммовой отчет'

@@ -28,8 +28,8 @@ async def help_command(message: Message):
 async def set_commands(message: Message):
     commands = [
         BotCommand(command="/start", description=Button.START),
+        BotCommand(command="/set_commands", description=Button.SET_COMMANDS),
         BotCommand(command="/help", description=Button.HELP),
-        # BotCommand(command="/food", description="Заказать блюда")
     ]
     await message.answer('Команды установлены. \nДля отображения списка комманд перезапустите приложение телеграм')
     await bot.set_my_commands(commands)
