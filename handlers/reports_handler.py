@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
-from callbacks import people_in_zone, total_report
+from callbacks import people_in_zone, total_report, cash_report
 from constants import Button
 from library.aiogramcalendar import create_calendar
 from misc import dp
@@ -14,7 +14,7 @@ from states import GeneralMenu, ReportsStates
 async def reports_menu_state(message: Message, state: FSMContext):
     await ReportsStates.reports_menu_state.set()
     rkb = ReplyKeyboardMarkup(row_width=1)
-    buttons = [Button.PEOPLE_IN_ZONE, Button.TOTAL_REPORT, Button.SUM_REPORT]
+    buttons = [Button.PEOPLE_IN_ZONE, Button.TOTAL_REPORT, Button.CASH_REPORT]
     rkb.add(*buttons)
     await message.answer('Выберите отчет', reply_markup=rkb)
 
@@ -23,11 +23,11 @@ async def reports_menu_state(message: Message, state: FSMContext):
 @dp.message_handler(lambda message: message.text == Button.CHANGE_PERIOD, state=ReportsStates.choose_date_from_state)
 @dp.message_handler(lambda message: message.text == Button.CHANGE_PERIOD, state=ReportsStates.choose_date_to_state)
 @dp.message_handler(
-    lambda message: message.text in [Button.TOTAL_REPORT, Button.SUM_REPORT], state=ReportsStates.reports_menu_state)
+    lambda message: message.text in [Button.TOTAL_REPORT, Button.CASH_REPORT], state=ReportsStates.reports_menu_state)
 async def choose_period_state(message: Message, state: FSMContext):
     await ReportsStates.choose_period_state.set()
 
-    if message.text in [Button.TOTAL_REPORT, Button.SUM_REPORT]:
+    if message.text in [Button.TOTAL_REPORT, Button.CASH_REPORT]:
         await state.update_data(report_name=message.text)
 
     memory = await state.get_data()
@@ -43,12 +43,11 @@ async def choose_date_from_state(message: Message, state: FSMContext):
 
     await state.update_data(message=message)
     await message.answer("Выберите начало периода:", reply_markup=ReplyKeyboardRemove())
-    await message.answer("------------------------", reply_markup=create_calendar())
+    await message.answer("_", reply_markup=create_calendar())
 
 
 @dp.message_handler(lambda message: message.text in [Button.TODAY, Button.YESTERDAY], state=ReportsStates.choose_period_state)
 @dp.message_handler(lambda message: message.text == Button.PEOPLE_IN_ZONE, state=ReportsStates.reports_menu_state)
-@dp.message_handler(lambda message: message.text == Button.SET, state=ReportsStates.choose_date_to_state)
 async def set_period_state(message: Message, state: FSMContext):
     await ReportsStates.set_period_state.set()
 
@@ -102,8 +101,10 @@ async def request_state(message: Message, state: FSMContext):
             date_from=datetime.strptime(memory['date_from'], '%Y%m%d'),
             date_to=datetime.strptime(memory['date_to'], '%Y%m%d'))
 
-    elif memory['report_name'] == Button.SUM_REPORT:
-        await message.answer(f'Функция временно не работает')
+    elif memory['report_name'] == Button.CASH_REPORT:
+        result = await cash_report(
+            date_from=datetime.strptime(memory['date_from'], '%Y%m%d'),
+            date_to=datetime.strptime(memory['date_to'], '%Y%m%d'))
 
     rkb = ReplyKeyboardMarkup(row_width=1)
     buttons = [Button.PRINT, Button.SAVE]

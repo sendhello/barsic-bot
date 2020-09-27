@@ -73,3 +73,22 @@ async def total_report(date_from: datetime, date_to: datetime):
 
     result = response['data']['report']
     return result
+
+
+async def cash_report(date_from: datetime, date_to: datetime):
+    url = f'{API_URI}/cash-report/'
+    params = {
+        'db_type': 'aqua',
+        'date_from': date_from.strftime('%Y-%m-%d'),
+        'date_to': date_to.strftime('%Y-%m-%d')
+    }
+    try:
+        response = await fetch(url, params)
+    except ClientConnectorError:
+        return 'Сервер не доступен'
+
+    if response['status'] != 'ok':
+        return f"Ошибка запроса: {response.get('errors')}"
+
+    result = response['data']['report']
+    return result

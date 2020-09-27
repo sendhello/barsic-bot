@@ -5,7 +5,7 @@ class Button:
     SET_COMMANDS = 'Обновить команды'
     PEOPLE_IN_ZONE = 'Люди в зоне'
     TOTAL_REPORT = 'Итоговый отчет'
-    SUM_REPORT = 'Суммовой отчет'
+    CASH_REPORT = 'Суммовой отчет'
     TODAY = 'За сегодня'
     YESTERDAY = 'За вчера'
     OTHER_PERIOD = 'Произвольный период'
