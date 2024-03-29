@@ -1,11 +1,12 @@
 import calendar
 from datetime import datetime, timedelta
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.callback_data import CallbackData
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.callback_answer import CallbackAnswer as CallbackData
+
 
 # setting callback_data prefix and parts
-calendar_callback = CallbackData('calendar', 'act', 'year', 'month', 'day')
+calendar_callback = CallbackData("calendar", "act", "year", "month", "day")
 
 
 def create_calendar(year=datetime.now().year, month=datetime.now().month):
@@ -20,11 +21,11 @@ def create_calendar(year=datetime.now().year, month=datetime.now().month):
     # First row - Month and Year
     inline_kb.row()
     inline_kb.insert(InlineKeyboardButton("<<", callback_data=calendar_callback.new("PREV-YEAR", year, month, 1)))
-    inline_kb.insert(InlineKeyboardButton(f'{str(year)}', callback_data=ignore_callback))
+    inline_kb.insert(InlineKeyboardButton(f"{str(year)}", callback_data=ignore_callback))
     inline_kb.insert(InlineKeyboardButton(">>", callback_data=calendar_callback.new("NEXT-YEAR", year, month, 1)))
     inline_kb.row()
     inline_kb.insert(InlineKeyboardButton("<", callback_data=calendar_callback.new("PREV-MONTH", year, month, 1)))
-    inline_kb.insert(InlineKeyboardButton(f'{calendar.month_name[month]}', callback_data=ignore_callback))
+    inline_kb.insert(InlineKeyboardButton(f"{calendar.month_name[month]}", callback_data=ignore_callback))
     inline_kb.insert(InlineKeyboardButton(">", callback_data=calendar_callback.new("NEXT-MONTH", year, month, 1)))
     # Second row - Week Days
     inline_kb.row()
@@ -36,11 +37,12 @@ def create_calendar(year=datetime.now().year, month=datetime.now().month):
     for week in month_calendar:
         inline_kb.row()
         for day in week:
-            if (day == 0):
+            if day == 0:
                 inline_kb.insert(InlineKeyboardButton(" ", callback_data=ignore_callback))
             else:
                 inline_kb.insert(
-                    InlineKeyboardButton(str(day), callback_data=calendar_callback.new("DAY", year, month, day)))
+                    InlineKeyboardButton(str(day), callback_data=calendar_callback.new("DAY", year, month, day))
+                )
 
     return inline_kb
 
@@ -55,28 +57,28 @@ async def process_calendar_selection(query, data):
                 and returning the date if so.
     """
     return_data = (False, None)
-    temp_date = datetime(int(data['year']), int(data['month']), 1)
+    temp_date = datetime(int(data["year"]), int(data["month"]), 1)
     # processing empty buttons, answering with no action
-    if data['act'] == "IGNORE":
+    if data["act"] == "IGNORE":
         await query.answer(cache_time=60)
     # user picked a day button, return date
-    elif data['act'] == "DAY":
+    elif data["act"] == "DAY":
         await query.message.delete_reply_markup()  # removing inline keyboard
-        return_data = True, datetime(int(data['year']), int(data['month']), int(data['day']))
+        return_data = True, datetime(int(data["year"]), int(data["month"]), int(data["day"]))
     # user navigates to previous year, editing message with new calendar
-    elif data['act'] == "PREV-YEAR":
+    elif data["act"] == "PREV-YEAR":
         prev_date = temp_date - timedelta(days=365)
         await query.message.edit_reply_markup(create_calendar(int(prev_date.year), int(prev_date.month)))
     # user navigates to next year, editing message with new calendar
-    elif data['act'] == "NEXT-YEAR":
+    elif data["act"] == "NEXT-YEAR":
         next_date = temp_date + timedelta(days=365)
         await query.message.edit_reply_markup(create_calendar(int(next_date.year), int(next_date.month)))
     # user navigates to previous month, editing message with new calendar
-    elif data['act'] == "PREV-MONTH":
+    elif data["act"] == "PREV-MONTH":
         prev_date = temp_date - timedelta(days=1)
         await query.message.edit_reply_markup(create_calendar(int(prev_date.year), int(prev_date.month)))
     # user navigates to next month, editing message with new calendar
-    elif data['act'] == "NEXT-MONTH":
+    elif data["act"] == "NEXT-MONTH":
         next_date = temp_date + timedelta(days=31)
         await query.message.edit_reply_markup(create_calendar(int(next_date.year), int(next_date.month)))
     else:
