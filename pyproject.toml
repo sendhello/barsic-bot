@@ -6,7 +6,7 @@ authors = ["Ivan Bazhenov <bazhenov.in@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 aiogram = "^3.4.1"
 emoji = "^2.10.1"
 pydantic-settings = "^2.2.1"

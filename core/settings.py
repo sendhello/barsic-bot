@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings
 
 from core.logger import LOGGING
 
+
 # Применяем настройки логирования
 logging_config.dictConfig(LOGGING)
 
@@ -34,7 +35,7 @@ class AppSettings(BaseSettings):
     project_name: str = Field("Barsic Bot", validation_alias="PROJECT_NAME")
     debug: bool = Field(False, validation_alias="DEBUG")
 
-    telegram_token: SecretStr = Field(validation_alias="TELEGRAM_TOKEN")
+    bot_telegram_token: SecretStr = Field(validation_alias="BOT_TELEGRAM_TOKEN")
 
     @property
     def user_agent(self):
@@ -45,7 +46,12 @@ class AppSettings(BaseSettings):
 class GatewaySettings(BaseSettings):
     """Настройки гейтвеев."""
 
-    barsic_web_gateway: str = Field("http://localhost", validation_alias="BARSIC_WEB_GATEWAY")
+    barsic_web_host: str = Field("localhost", validation_alias="BARSIC_WEB_HOST")
+    barsic_web_port: int = Field(80, validation_alias="BARSIC_WEB_PORT")
+
+    @property
+    def barsic_web_gateway(self) -> str:
+        return f"http://{self.barsic_web_host}:{self.barsic_web_port}"
 
 
 class Settings(AppSettings, GatewaySettings):

@@ -5,6 +5,7 @@ from typing import Callable, Mapping, ParamSpec, Type, TypeVar
 import pydantic
 from httpx import AsyncClient, Response
 
+
 P = ParamSpec("P")
 T = TypeVar("T")
 

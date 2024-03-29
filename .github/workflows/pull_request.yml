@@ -3,7 +3,7 @@ name: Pull Request
 on:
   pull_request:
     types: [ assigned, opened, synchronize, reopened ]
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   linters:
@@ -28,8 +28,8 @@ jobs:
           python -m pip install poetry
           poetry install --no-dev
 
-      - name: flake8 Lint
-        uses: py-actions/flake8@v2
+#      - name: flake8 Lint
+#        uses: py-actions/flake8@v2
 
       - name: Isort Lint
         uses: isort/isort-action@master

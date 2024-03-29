@@ -4,8 +4,8 @@ from filters.chat_type import ChatTypeFilter
 
 from .main_menu import main_menu
 from .report_menu import report_menu
-from .start import router as start_router
 from .service_distribution_menu import router as service_distribution_router
+from .start import router as start_router
 
 
 router = Router()

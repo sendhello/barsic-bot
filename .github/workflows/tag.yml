@@ -1,9 +1,9 @@
 name: Pull Request
 
 on:
-  label:
-    types:
-      - created
+  push:
+    tags:
+      - v1.*
 
 jobs:
   linters:
