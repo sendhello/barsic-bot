@@ -151,7 +151,7 @@ async def run_report(
                 telegram_report=telegram_report,
             )
             message = f"{'Финансовый отчет сформирован' if result.ok else 'Ошибка'}"
-            detail = f"{result.google_report}"
+            detail = f"{result.google_report}" if result.ok else result.detail
             await manager.update({"report_result": f"{message}\n{detail}"})
             await manager.switch_to(ReportMenu.SHOW_REPORT)
 
@@ -161,7 +161,7 @@ async def run_report(
                 end_date=end_date,
             )
             message = f"{'Итоговый отчет с разбивкой сформирован' if result.ok else 'Ошибка'}"
-            detail = f"{result.google_report}"
+            detail = f"{result.google_report}" if result.ok else result.detail
             await manager.update({"report_result": f"{message}\n{detail}"})
             await manager.switch_to(ReportMenu.SHOW_REPORT)
 
