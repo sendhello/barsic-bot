@@ -19,7 +19,7 @@ async def setup_commands(bot: Bot):
 
 # Запуск бота
 async def main():
-    bot = Bot(token=settings.telegram_token.get_secret_value())
+    bot = Bot(token=settings.bot_telegram_token.get_secret_value())
     await setup_commands(bot)
     dp = Dispatcher()
     dp.include_router(router)
