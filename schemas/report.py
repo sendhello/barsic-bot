@@ -9,11 +9,11 @@ class PeopleInZone(BaseModel):
 class TotalByDayResult(BaseModel):
     ok: bool = Field(False)
     google_report: AnyUrl | None = Field(None, alias="Google Report")
-    detail: str | None = Field(None, alias="Детализация ошибок")
+    detail: str | None = Field(None)
 
 
 class FinanceReportResult(BaseModel):
     ok: bool = Field(False)
     google_report: AnyUrl | None = Field(None, alias="Google Report")
     telegram_message: str | None = Field(None, alias="Telegram Message")
-    detail: str | None = Field(None, alias="Детализация ошибок")
+    detail: str | None = Field(None)
