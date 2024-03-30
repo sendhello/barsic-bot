@@ -8,7 +8,6 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button, Cancel
 from aiogram_dialog.widgets.text import Const, Format
 
-from constants import ReportType
 from gateways.client import get_barsic_web_gateway
 from states import ServiceDistributionMenu
 
