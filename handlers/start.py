@@ -8,6 +8,7 @@ from aiogram_dialog import DialogManager
 
 from states import MainMenu
 
+
 router = Router()
 router.my_chat_member.filter(F.chat.type == "private")
 router.message.filter(F.chat.type == "private")

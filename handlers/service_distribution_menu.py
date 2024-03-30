@@ -12,6 +12,7 @@ from constants import ReportType
 from gateways.client import get_barsic_web_gateway
 from states import ServiceDistributionMenu
 
+
 logger = logging.getLogger(__name__)
 
 router = Router()

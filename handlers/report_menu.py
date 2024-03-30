@@ -13,6 +13,7 @@ from gateways.client import get_barsic_web_gateway
 from schemas.report import FinanceReportResult, PeopleInZone, TotalByDayResult
 from states import ReportMenu
 
+
 logger = logging.getLogger(__name__)
 
 router = Router()
