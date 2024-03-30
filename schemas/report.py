@@ -3,7 +3,7 @@ from pydantic import AnyUrl, BaseModel, Field
 
 class PeopleInZone(BaseModel):
     total: str = Field(alias="Всего")
-    aquazone: int = Field(alias="Аквазона")
+    aquazone: int = Field(0, alias="Аквазона")
 
 
 class TotalByDayResult(BaseModel):
