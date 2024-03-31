@@ -63,9 +63,15 @@ async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwar
     else:
         telegram_report_text = "Не отправлять сообщение в Telegram"
 
+    if dialog_manager.find("use_cache").is_checked():
+        use_cache_text = "Использовать кеш"
+    else:
+        use_cache_text = "Не использовать кеш"
+
     return {
         "use_yadisk_text": use_yadisk_text,
         "telegram_report_text": telegram_report_text,
+        "use_cache_text": use_cache_text,
     }
 
 
@@ -81,6 +87,10 @@ def is_not_people_in_zone(data: Dict, widget: Whenable, manager: DialogManager) 
 
 def is_finance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "finance_report"
+
+
+def is_total_by_day(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["report_type"] == "total_by_day"
 
 
 async def run_finance_report(
@@ -102,7 +112,7 @@ async def run_finance_report(
     return FinanceReportResult.model_validate(response.json())
 
 
-async def run_total_by_day(start_date: date, end_date: date | None) -> TotalByDayResult:
+async def run_total_by_day(start_date: date, end_date: date | None, use_cache: bool = True) -> TotalByDayResult:
     start_date = date(end_date.year, end_date.month, 1)
 
     gateway = get_barsic_web_gateway()
@@ -111,6 +121,7 @@ async def run_total_by_day(start_date: date, end_date: date | None) -> TotalByDa
         params={
             "date_from": datetime.combine(start_date, datetime.min.time()),
             "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+            "use_cache": use_cache,
             "db_name": "Aquapark_Ulyanovsk",
         },
     )
@@ -127,6 +138,7 @@ async def run_report(
     end_date = manager.dialog_data["end_date"]
     use_yadisk = manager.find("use_yadisk").is_checked()
     telegram_report = manager.find("telegram_report").is_checked()
+    use_cache = manager.find("use_cache").is_checked()
 
     match report_type:
 
@@ -159,6 +171,7 @@ async def run_report(
             result = await run_total_by_day(
                 start_date=start_date,
                 end_date=end_date,
+                use_cache=use_cache,
             )
             message = f"{'Итоговый отчет с разбивкой сформирован' if result.ok else 'Ошибка'}"
             detail = f"{result.google_report}" if result.ok else result.detail
@@ -198,6 +211,7 @@ report_menu = Dialog(
         Format("Период: с {dialog_data[start_date]} по {dialog_data[end_date]}", when=is_not_people_in_zone),
         Format("{use_yadisk_text}", when=is_finance_report),
         Format("{telegram_report_text}", when=is_finance_report),
+        Format("{use_cache_text}", when=is_total_by_day),
         SwitchTo(
             Const("Изменить дату начала периода"),
             id="change_start_date",
@@ -221,6 +235,12 @@ report_menu = Dialog(
             unchecked_text=Const("[ ] Не отправлять в Telegram"),
             id="telegram_report",
             when=is_finance_report,
+        ),
+        Checkbox(
+            checked_text=Const("[x] Использовать кеш"),
+            unchecked_text=Const("[ ] Не использовать кеш"),
+            id="use_cache",
+            when=is_total_by_day,
         ),
         Button(
             Const("Сформировать отчет"),
