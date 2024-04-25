@@ -29,6 +29,14 @@ class PostgresSettings(BaseSettings):
         )
 
 
+class RedisSettings(BaseSettings):
+    """Настройки Redis."""
+
+    redis_host: str = Field("127.0.0.1", validation_alias="REDIS_HOST")
+    redis_port: int = Field(6379, validation_alias="REDIS_PORT")
+    cache_time: int = Field(60 * 60 * 24 * 30, validation_alias="CACHE_TIME")
+
+
 class AppSettings(BaseSettings):
     """Настройки приложения."""
 
@@ -36,6 +44,9 @@ class AppSettings(BaseSettings):
     debug: bool = Field(False, validation_alias="DEBUG")
 
     bot_telegram_token: SecretStr = Field(validation_alias="BOT_TELEGRAM_TOKEN")
+    user_password: SecretStr = Field(validation_alias="USER_PASSWORD")
+    admin_password: SecretStr = Field(validation_alias="ADMIN_PASSWORD")
+    password_limit: int = Field(10, validation_alias="WRITE_PASSWORD_LIMIT_PER_DAY")
 
     @property
     def user_agent(self):
@@ -54,7 +65,7 @@ class GatewaySettings(BaseSettings):
         return f"http://{self.barsic_web_host}:{self.barsic_web_port}"
 
 
-class Settings(AppSettings, GatewaySettings):
+class Settings(AppSettings, GatewaySettings, RedisSettings):
     """Все настройки."""
 
     pass

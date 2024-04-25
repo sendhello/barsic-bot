@@ -23,16 +23,16 @@ EXTEND_BTN_ID = "extend"
 
 
 async def getter(dialog_manager: DialogManager, **kwargs) -> Dict[str, Any]:
-    # if dialog_manager.find(EXTEND_BTN_ID).is_checked():
-    #     return {
-    #         "extended_str": "on",
-    #         "extended": True,
-    #     }
-    # else:
-    return {
-        "extended_str": "off",
-        "extended": False,
-    }
+    if dialog_manager.find(EXTEND_BTN_ID).is_checked():
+        return {
+            "extended_str": "on",
+            "extended": True,
+        }
+    else:
+        return {
+            "extended_str": "off",
+            "extended": False,
+        }
 
 
 async def run(

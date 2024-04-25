@@ -1,40 +1,35 @@
 from aiogram import F, Router
 from aiogram.filters import StateFilter
-from aiogram.filters.chat_member_updated import KICKED, MEMBER, ChatMemberUpdatedFilter
 from aiogram.filters.command import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import ChatMemberUpdated, Message
+from aiogram.types import Message
 from aiogram_dialog import DialogManager
 
-from states import MainMenu
+from constants import PERMISSION_ID
+from repositories.redis_repo import get_redis_repo
+from states import MainMenu, ReportMenu, ServiceDistributionMenu
 
 
 router = Router()
 router.my_chat_member.filter(F.chat.type == "private")
 router.message.filter(F.chat.type == "private")
 
-# Исключительно для примера!
-# В реальной жизни используйте более надёжные
-# источники айди юзеров
-users = {111, 222}
-
-
-@router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=KICKED))
-async def user_blocked_bot(event: ChatMemberUpdated):
-    users.discard(event.from_user.id)
-
-
-@router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=MEMBER))
-async def user_unblocked_bot(event: ChatMemberUpdated):
-    users.add(event.from_user.id)
+NOT_TEXT_STATES = [MainMenu.START, *list(ReportMenu), *list(ServiceDistributionMenu)]
 
 
 @router.message(StateFilter(None), CommandStart())
 async def start(message: Message, dialog_manager: DialogManager):
+    user_id = message.from_user.id
+    redis_repo = await get_redis_repo()
+    permission = await redis_repo.get_from_cache(key=f"{PERMISSION_ID}:{user_id}")
+    if permission is None:
+        await dialog_manager.start(MainMenu.AUTHORIZATION)
+        return None
+
     await dialog_manager.start(MainMenu.START)
 
 
-@router.message(StateFilter(None))
+@router.message(StateFilter(*NOT_TEXT_STATES))
 async def reports(message: Message, state: FSMContext):
     await message.reply("Неверная команда")
 
