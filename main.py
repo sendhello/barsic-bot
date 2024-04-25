@@ -1,11 +1,14 @@
 import asyncio
+from contextlib import asynccontextmanager
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters.command import BotCommand
 from aiogram_dialog import setup_dialogs
+from redis.asyncio import Redis
 
 from constants import ButtonID, text
 from core.settings import settings
+from db import redis_db
 from handlers import router
 
 
@@ -15,6 +18,14 @@ async def setup_commands(bot: Bot):
         BotCommand(command="/help", description=text(ButtonID.HELP)),
     ]
     await bot.set_my_commands(commands)
+
+
+@asynccontextmanager
+async def lifespan():
+    redis_db.redis = Redis(host=settings.redis_host, port=settings.redis_port, db=0, decode_responses=True)
+    yield
+
+    await redis_db.redis.close()
 
 
 # Запуск бота
@@ -28,7 +39,8 @@ async def main():
     # Запускаем бота и пропускаем все накопленные входящие
     # Да, этот метод можно вызвать даже если у вас поллинг
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    async with lifespan():
+        await dp.start_polling(bot)
 
 
 if __name__ == "__main__":

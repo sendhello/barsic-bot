@@ -1,6 +1,13 @@
 from enum import StrEnum, auto
 
 
+USER_KEY = "user"
+ADMIN_KEY = "admin"
+PERMISSION_ID = "bot_permission"
+LIMIT_ID = "password_limit"
+BLOCKED_USER_ID = "user_blocked"
+
+
 class ReportType(StrEnum):
     PEOPLE_IN_ZONE = auto()
     TOTAL_REPORT = auto()
