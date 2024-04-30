@@ -8,6 +8,7 @@ from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button, Cancel
 from aiogram_dialog.widgets.text import Const, Format
 
+from constants import ButtonID, button_text
 from gateways.client import get_barsic_web_gateway
 from states import ServiceDistributionMenu
 
@@ -85,7 +86,7 @@ report_menu = Dialog(
             id="search_services_plat_agent",
             on_click=search_plat_agent_services,
         ),
-        Cancel(text=Const("Отмена")),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ServiceDistributionMenu.START,
     ),
     Window(

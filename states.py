@@ -15,6 +15,14 @@ class ReportMenu(StatesGroup):
     SHOW_REPORT = State()
 
 
+class InfoMenu(StatesGroup):
+    START = State()
+    CHOOSE_INFO = State()
+    CHANGE_START_DATE = State()
+    CHANGE_END_DATE = State()
+    SHOW_STATE = State()
+
+
 class ServiceDistributionMenu(StatesGroup):
     START = State()
     FOUND_SERVICES = State()
