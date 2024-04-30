@@ -1,8 +1,7 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date
 from typing import Any, Dict
 
-from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.common import Whenable
@@ -16,10 +15,6 @@ from states import ReportMenu
 
 
 logger = logging.getLogger(__name__)
-
-router = Router()
-router.my_chat_member.filter(F.chat.type == "private")
-router.message.filter(F.chat.type == "private")
 
 
 async def on_dialog_start(start_data: Any, manager: DialogManager):
@@ -103,14 +98,11 @@ async def run_finance_report(
         end_date = start_date
 
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(
-        url="/api/v1/reports/create_reports",
-        params={
-            "date_from": datetime.combine(start_date, datetime.min.time()),
-            "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
-            "use_yadisk": use_yadisk,
-            "telegram_report": telegram_report,
-        },
+    response = await gateway.create_reports(
+        start_date=start_date,
+        end_date=end_date,
+        use_yadisk=use_yadisk,
+        telegram_report=telegram_report,
     )
     return FinanceReportResult.model_validate(response.json())
 
@@ -119,14 +111,11 @@ async def run_total_by_day(start_date: date, end_date: date | None, use_cache: b
     start_date = date(end_date.year, end_date.month, 1)
 
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(
-        url="/api/v1/reports/create_total_report_by_day",
-        params={
-            "date_from": datetime.combine(start_date, datetime.min.time()),
-            "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
-            "use_cache": use_cache,
-            "db_name": "Aquapark_Ulyanovsk",
-        },
+    response = await gateway.create_total_report_by_day(
+        start_date=start_date,
+        end_date=end_date,
+        use_cache=use_cache,
+        db_name="Aquapark_Ulyanovsk",
     )
     return TotalByDayResult.model_validate(response.json())
 

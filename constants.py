@@ -28,8 +28,14 @@ class ButtonID(StrEnum):
 
 def button_text(id_: ButtonID) -> str:
     text = {
-        ButtonID.START: "🏁Старт",
-        ButtonID.HELP: "ℹ️Помощь",
-        ButtonID.CANCEL: "❌Отмена",
+        ButtonID.START: "🏁 Старт",
+        ButtonID.HELP: "ℹ️ Помощь",
+        ButtonID.CANCEL: "❌ Отмена",
     }
     return text.get(id_)
+
+
+class ReportType(StrEnum):
+    GoogleReport = "GoogleReport"
+    PlatAgentReport = "PlatAgentReport"
+    ItogReport = "ItogReport"

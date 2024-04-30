@@ -8,7 +8,7 @@ from middlewares.blocked_user import BlockerUserMiddleware
 from .info_menu import info_menu
 from .main_menu import main_menu
 from .report_menu import report_menu
-from .service_distribution_menu import router as service_distribution_router
+from .service_distribution_menu import service_distribution_menu
 from .start import router as start_router
 
 
@@ -18,7 +18,7 @@ router.include_router(main_menu)
 
 admin_router = Router()
 admin_router.include_router(report_menu)
-admin_router.include_router(service_distribution_router)
+admin_router.include_router(service_distribution_menu)
 admin_router.message.filter(PermissionFilter(roles=[ADMIN_KEY]))
 admin_router.callback_query.filter(PermissionFilter(roles=[ADMIN_KEY]))
 router.include_router(admin_router)

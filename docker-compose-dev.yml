@@ -130,14 +130,18 @@ services:
     environment:
       ALLOW_EMPTY_PASSWORD: ${ALLOW_EMPTY_PASSWORD}
     volumes:
-      - redis:/data
-    expose:
-      - "6379"
+      - barsic_redis:/data
+    ports:
+      - "6379:6379"
     networks:
       - network
 
 volumes:
-  redis:
+  barsic_web_barsic_pg:
+    external: true
+  barsic_redis:
+  barsic_web_azure-sql-storage:
+    external: true
 
 networks:
   network:

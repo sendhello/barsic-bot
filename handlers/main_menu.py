@@ -11,7 +11,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from constants import ADMIN_KEY, BLOCKED_USER_ID, PERMISSION_ID, USER_KEY
 from core.settings import settings
 from repositories.redis_repo import get_redis_repo
-from states import InfoMenu, MainMenu, ReportMenu
+from states import InfoMenu, MainMenu, ReportMenu, ServiceDistributionMenu
 
 
 logger = logging.getLogger(__name__)
@@ -77,19 +77,25 @@ main_menu = Dialog(
     Window(
         Format("Здравствуйте, {event.from_user.username}! \n\n" "Выберите действие\n"),
         Start(
-            Const("ℹ️Инфо"),
+            Const("ℹ️ Инфо"),
             id="info",
             state=InfoMenu.START,
             when=is_user_or_admin,
         ),
         Start(
-            Const("⚙️Генерация отчетов"),
+            Const("⚙️ Генерация отчетов"),
             id="report",
             state=ReportMenu.START,
             when=is_admin,
         ),
+        Start(
+            Const("🏗️ Распределение услуг"),
+            id="services_distribution",
+            state=ServiceDistributionMenu.START,
+            when=is_admin,
+        ),
         Button(
-            Const("🚪Выйти"),
+            Const("🚪 Выйти"),
             id="build_report",
             on_click=logout,
         ),

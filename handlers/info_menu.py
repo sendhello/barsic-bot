@@ -30,7 +30,7 @@ async def on_dialog_start(start_data: Any, manager: DialogManager):
 
 async def get_client_count() -> PeopleInZone:
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(url="/api/v1/reports/client_count")
+    response = await gateway.client_count()
     return PeopleInZone.model_validate(response.json())
 
 
@@ -61,7 +61,7 @@ info_menu = Dialog(
         Const("Инфо"),
         Row(
             Button(
-                Const("👥Люди в зоне"),
+                Const("👥 Люди в зоне"),
                 id="people_in_zone",
                 on_click=show_people_in_zone,
             ),

@@ -1,29 +1,17 @@
 import logging
-from enum import Enum
 from typing import Any
 
-from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import Button, Cancel
 from aiogram_dialog.widgets.text import Const, Format
 
-from constants import ButtonID, button_text
+from constants import ButtonID, ReportType, button_text
 from gateways.client import get_barsic_web_gateway
 from states import ServiceDistributionMenu
 
 
 logger = logging.getLogger(__name__)
-
-router = Router()
-router.my_chat_member.filter(F.chat.type == "private")
-router.message.filter(F.chat.type == "private")
-
-
-class ReportType(str, Enum):
-    GoogleReport = "GoogleReport"
-    PlatAgentReport = "PlatAgentReport"
-    ItogReport = "ItogReport"
 
 
 async def on_dialog_start(start_data: Any, manager: DialogManager):
@@ -35,13 +23,7 @@ async def on_dialog_start(start_data: Any, manager: DialogManager):
 
 async def get_service_services(report_type: ReportType) -> list[str]:
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(
-        url="/api/v1/report_settings/new_services",
-        params={
-            "report_name": report_type,
-            "db_name": "Aquapark_Ulyanovsk",
-        },
-    )
+    response = await gateway.get_new_services(report_type=report_type, db_name="Aquapark_Ulyanovsk")
     return response.json()
 
 
@@ -50,12 +32,20 @@ async def search_google_report_services(
     button: Button,
     manager: DialogManager,
 ):
+    text = "Финансовый отчет\nНераспределенные тарифы"
     result = await get_service_services(ReportType.GoogleReport)
-    await manager.update(
-        {
-            "report_result": ("Нераспределенные тарифы:\n" "\n".join(result)),
-        }
-    )
+    if result:
+        await manager.update(
+            {
+                "report_result": text + ":\n" + "\n".join(result),
+            }
+        )
+    else:
+        await manager.update(
+            {
+                "report_result": text + " не найдены",
+            }
+        )
     await manager.switch_to(ServiceDistributionMenu.FOUND_SERVICES)
 
 
@@ -64,25 +54,33 @@ async def search_plat_agent_services(
     button: Button,
     manager: DialogManager,
 ):
-    result = await get_service_services(ReportType.GoogleReport)
-    await manager.update(
-        {
-            "report_result": ("Нераспределенные тарифы:\n" "\n".join(result)),
-        }
-    )
+    text = "Отчет платежного агента\nНераспределенные тарифы"
+    result = await get_service_services(ReportType.PlatAgentReport)
+    if result:
+        await manager.update(
+            {
+                "report_result": text + ":\n" + "\n".join(result),
+            }
+        )
+    else:
+        await manager.update(
+            {
+                "report_result": text + " не найдены",
+            }
+        )
     await manager.switch_to(ServiceDistributionMenu.FOUND_SERVICES)
 
 
-report_menu = Dialog(
+service_distribution_menu = Dialog(
     Window(
         Const("Распределение услуг"),
         Button(
-            Const(f"Поиск новых услуг {ReportType.GoogleReport}"),
+            Const("Поиск новых услуг: Финансовый отчет"),
             id="search_services_google",
             on_click=search_google_report_services,
         ),
         Button(
-            Const(f"Поиск новых услуг {ReportType.PlatAgentReport}"),
+            Const("Поиск новых услуг: Отчет платежного агента"),
             id="search_services_plat_agent",
             on_click=search_plat_agent_services,
         ),
