@@ -32,6 +32,12 @@ class RedisRepo:
         logger.info(f"Getting data from redis: key = {key}")
         return data
 
+    async def del_from_cache(self, key: str):
+        """Метод удаления из кеша."""
+
+        logger.info(f"Deleting data from redis: key {key}")
+        await self.redis.delete(key)
+
     async def add_to_set(self, key: str, data: str):
         logger.info(f"Writing data to set of redis: key {key}")
         await self.redis.sadd(key, data)

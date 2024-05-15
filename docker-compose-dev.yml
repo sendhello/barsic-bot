@@ -11,6 +11,7 @@ services:
       PROJECT_NAME: ${PROJECT_NAME}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
+      CACHE_TIME: ${CACHE_TIME}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -23,12 +24,105 @@ services:
       BARSIC_WEB_HOST: ${BARSIC_WEB_HOST}
       BARSIC_WEB_PORT: ${BARSIC_WEB_PORT}
       WRITE_PASSWORD_LIMIT_PER_DAY: ${WRITE_PASSWORD_LIMIT_PER_DAY}
+      CHECKBOX_SIZE: ${CHECKBOX_SIZE}
     volumes:
       - ./:/opt/app/
     networks:
       network:
     depends_on:
       - redis
+
+  barsic-web:
+    container_name: barsic-web
+    hostname: barsic-web
+    image: sendhello/barsic3-api:v3.0.9
+    environment:
+      DEBUG: ${DEBUG}
+      PROJECT_NAME: ${PROJECT_NAME}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # AppSettings
+      MSSQL_DRIVER_TYPE: ${MSSQL_DRIVER_TYPE}
+      MSSQL_SERVER: ${MSSQL_SERVER}
+      MSSQL_USER: ${MSSQL_USER}
+      MSSQL_PWD: ${MSSQL_PWD}
+      MSSQL_DATABASE1: ${MSSQL_DATABASE1}
+      MSSQL_DATABASE2: ${MSSQL_DATABASE2}
+      MSSQL_DATABASE_BITRIX: ${MSSQL_DATABASE_BITRIX}
+      MSSQL_SERVER_RK: ${MSSQL_SERVER_RK}
+      MSSQL_USER_RK: ${MSSQL_USER_RK}
+      MSSQL_PWD_RK: ${MSSQL_PWD_RK}
+      MSSQL_DATABASE_RK: ${MSSQL_DATABASE_RK}
+      LOCAL_FOLDER: ${LOCAL_FOLDER}
+      REPORT_PATH: ${REPORT_PATH}
+      YADISK_TOKEN: ${YADISK_TOKEN}
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      TELEGRAM_CHANEL_ID: ${TELEGRAM_CHANEL_ID}
+      REPORT_NAMES: ${REPORT_NAMES}
+      # Google Docs Settings
+      GOOGLE_ALL_READ: ${GOOGLE_ALL_READ}
+      GOOGLE_READER_LIST: ${GOOGLE_READER_LIST}
+      GOOGLE_WRITER_LIST: ${GOOGLE_WRITER_LIST}
+      GOOGLE_API_PROJECT_ID: ${GOOGLE_API_PROJECT_ID}
+      GOOGLE_API_PRIVATE_KEY_ID: ${GOOGLE_API_PRIVATE_KEY_ID}
+      GOOGLE_API_PRIVATE_KEY: ${GOOGLE_API_PRIVATE_KEY}
+      GOOGLE_API_CLIENT_EMAIL: ${GOOGLE_API_CLIENT_EMAIL}
+      GOOGLE_API_CLIENT_ID: ${GOOGLE_API_CLIENT_ID}
+      GOOGLE_API_CLIENT_X509_CERT_URL: ${GOOGLE_API_CLIENT_X509_CERT_URL}
+    networks:
+      - network
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./reports:/opt/app/reports/
+    depends_on:
+      - redis
+      - postgres
+
+  mssql:
+    container_name: mssql
+    hostname: mssql
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      ACCEPT_EULA: ${ACCEPT_EULA}
+      MSSQL_USER: ${MSSQL_USER}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_PID: ${MSSQL_PID}
+    volumes:
+      - barsic_web_azure-sql-storage:/var/opt/mssql
+      - ./dev/backup/:/var/opt/backup
+    ports:
+      - "1433:1433"
+    networks:
+      - network
+
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:15.2
+    networks:
+      network:
+    ports:
+      - "5454:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - barsic_web_barsic_pg:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
 
   redis:
     container_name: redis
@@ -37,14 +131,18 @@ services:
     environment:
       ALLOW_EMPTY_PASSWORD: ${ALLOW_EMPTY_PASSWORD}
     volumes:
-      - redis:/data
-    expose:
-      - "6379"
+      - barsic_redis:/data
+    ports:
+      - "6379:6379"
     networks:
       - network
 
 volumes:
-  redis:
+  barsic_web_barsic_pg:
+    external: true
+  barsic_redis:
+  barsic_web_azure-sql-storage:
+    external: true
 
 networks:
   network:

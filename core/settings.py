@@ -47,6 +47,7 @@ class AppSettings(BaseSettings):
     user_password: SecretStr = Field(validation_alias="USER_PASSWORD")
     admin_password: SecretStr = Field(validation_alias="ADMIN_PASSWORD")
     password_limit: int = Field(10, validation_alias="WRITE_PASSWORD_LIMIT_PER_DAY")
+    checkbox_size: int = Field(10, validation_alias="CHECKBOX_SIZE")
 
     @property
     def user_agent(self):

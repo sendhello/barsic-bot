@@ -15,6 +15,31 @@ class ReportMenu(StatesGroup):
     SHOW_REPORT = State()
 
 
+class InfoMenu(StatesGroup):
+    START = State()
+    CHOOSE_INFO = State()
+    CHANGE_START_DATE = State()
+    CHANGE_END_DATE = State()
+    SHOW_STATE = State()
+
+
 class ServiceDistributionMenu(StatesGroup):
     START = State()
-    FOUND_SERVICES = State()
+    REPORT_MENU = State()
+    SERVICES_GROUPS = State()
+    SERVICES_GROUP_ELEMENTS = State()
+    DELETE_SERVICES_ELEMENT = State()
+    ADD_ELEMENTS = State()
+    DISTRIBUTION_ELEMENTS = State()
+    END = State()
+
+
+# for pos in range(100):
+#     state_name = f"DISTRIBUTION_ELEMENTS_{pos}"
+#     state = State(state=state_name, group_name='ServiceDistributionMenu')
+#     state._group = ServiceDistributionMenu
+#     setattr(
+#         ServiceDistributionMenu,
+#         state_name,
+#         state
+#     )

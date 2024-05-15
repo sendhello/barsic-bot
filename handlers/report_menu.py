@@ -1,24 +1,20 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date
 from typing import Any, Dict
 
-from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.common import Whenable
-from aiogram_dialog.widgets.kbd import Button, Calendar, Cancel, Checkbox, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Calendar, CalendarConfig, Cancel, Checkbox, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 
+from constants import ButtonID, button_text
 from gateways.client import get_barsic_web_gateway
 from schemas.report import FinanceReportResult, PeopleInZone, TotalByDayResult
 from states import ReportMenu
 
 
 logger = logging.getLogger(__name__)
-
-router = Router()
-router.my_chat_member.filter(F.chat.type == "private")
-router.message.filter(F.chat.type == "private")
 
 
 async def on_dialog_start(start_data: Any, manager: DialogManager):
@@ -68,10 +64,16 @@ async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwar
     else:
         use_cache_text = "Не использовать кеш"
 
+    report_name_map = {
+        "finance_report": "Финансовый отчет",
+        "total_by_day": "Итоговый отчет с разбивкой",
+    }
+
     return {
         "use_yadisk_text": use_yadisk_text,
         "telegram_report_text": telegram_report_text,
         "use_cache_text": use_cache_text,
+        "report_name": report_name_map[dialog_manager.dialog_data["report_type"]],
     }
 
 
@@ -79,10 +81,6 @@ async def get_client_count() -> PeopleInZone:
     gateway = get_barsic_web_gateway()
     response = await gateway.post(url="/api/v1/reports/client_count")
     return PeopleInZone.model_validate(response.json())
-
-
-def is_not_people_in_zone(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
-    return data["dialog_data"]["report_type"] != "people_in_zone"
 
 
 def is_finance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
@@ -100,14 +98,11 @@ async def run_finance_report(
         end_date = start_date
 
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(
-        url="/api/v1/reports/create_reports",
-        params={
-            "date_from": datetime.combine(start_date, datetime.min.time()),
-            "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
-            "use_yadisk": use_yadisk,
-            "telegram_report": telegram_report,
-        },
+    response = await gateway.create_reports(
+        start_date=start_date,
+        end_date=end_date,
+        use_yadisk=use_yadisk,
+        telegram_report=telegram_report,
     )
     return FinanceReportResult.model_validate(response.json())
 
@@ -116,14 +111,11 @@ async def run_total_by_day(start_date: date, end_date: date | None, use_cache: b
     start_date = date(end_date.year, end_date.month, 1)
 
     gateway = get_barsic_web_gateway()
-    response = await gateway.post(
-        url="/api/v1/reports/create_total_report_by_day",
-        params={
-            "date_from": datetime.combine(start_date, datetime.min.time()),
-            "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
-            "use_cache": use_cache,
-            "db_name": "Aquapark_Ulyanovsk",
-        },
+    response = await gateway.create_total_report_by_day(
+        start_date=start_date,
+        end_date=end_date,
+        use_cache=use_cache,
+        db_name="Aquapark_Ulyanovsk",
     )
     return TotalByDayResult.model_validate(response.json())
 
@@ -141,19 +133,6 @@ async def run_report(
     use_cache = manager.find("use_cache").is_checked()
 
     match report_type:
-
-        case "people_in_zone":
-            people_in_zone_report = await get_client_count()
-            await manager.update(
-                {
-                    "report_result": (
-                        "Количество людей в зоне\n"
-                        f"Аквазона: {people_in_zone_report.aquazone}\n"
-                        f"Всего: {people_in_zone_report.total}"
-                    ),
-                }
-            )
-            await manager.switch_to(ReportMenu.SHOW_REPORT)
 
         case "finance_report":
             result = await run_finance_report(
@@ -188,11 +167,6 @@ report_menu = Dialog(
         Const("Отчеты"),
         Format("Выберите тип отчета"),
         Button(
-            Const("Люди в зоне"),
-            id="people_in_zone",
-            on_click=choose_report,
-        ),
-        Button(
             Const("Финансовый отчет"),
             id="finance_report",
             on_click=choose_report,
@@ -202,65 +176,81 @@ report_menu = Dialog(
             id="total_by_day",
             on_click=choose_report,
         ),
-        Cancel(text=Const("Отмена")),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ReportMenu.START,
     ),
     Window(
-        Const("Отчеты"),
-        Format("Тип отчета: {dialog_data[report_type]}"),
-        Format("Период: с {dialog_data[start_date]} по {dialog_data[end_date]}", when=is_not_people_in_zone),
-        Format("{use_yadisk_text}", when=is_finance_report),
-        Format("{telegram_report_text}", when=is_finance_report),
-        Format("{use_cache_text}", when=is_total_by_day),
+        Format("{report_name}"),
         SwitchTo(
-            Const("Изменить дату начала периода"),
+            Format("Начало периода: {dialog_data[start_date]}"),
             id="change_start_date",
             state=ReportMenu.CHANGE_START_DATE,
-            when=is_not_people_in_zone,
         ),
         SwitchTo(
-            Const("Изменить дату конца периода"),
+            Format("Конец периода: {dialog_data[end_date]}"),
             id="change_end_date",
             state=ReportMenu.CHANGE_END_DATE,
-            when=is_not_people_in_zone,
         ),
         Checkbox(
             checked_text=Const("[x] Сохранять в YandexDisk"),
             unchecked_text=Const("[ ] Не сохранять в YandexDisk"),
             id="use_yadisk",
+            default=True,
             when=is_finance_report,
         ),
         Checkbox(
             checked_text=Const("[x] Отправлять в Telegram"),
             unchecked_text=Const("[ ] Не отправлять в Telegram"),
             id="telegram_report",
+            default=True,
             when=is_finance_report,
         ),
         Checkbox(
             checked_text=Const("[x] Использовать кеш"),
             unchecked_text=Const("[ ] Не использовать кеш"),
             id="use_cache",
+            default=True,
             when=is_total_by_day,
         ),
         Button(
-            Const("Сформировать отчет"),
+            Const("▶️Сформировать отчет"),
             id="build_report",
             on_click=run_report,
         ),
-        Cancel(text=Const("Отмена")),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
         getter=finance_report_checkboxes_getter,
         state=ReportMenu.CHOOSE_REPORT,
     ),
     Window(
-        Const("Изменить дату начала периода"),
-        Calendar(id="calendar", on_click=on_start_date_selected),
-        Cancel(text=Const("Отмена")),
+        Const("Дата начала периода"),
+        Calendar(
+            id="date_from_calendar",
+            on_click=on_start_date_selected,
+            config=CalendarConfig(
+                min_date=date(2000, 1, 1),
+                max_date=date(2100, 12, 31),
+                month_columns=3,
+                years_per_page=9,
+                years_columns=3,
+            ),
+        ),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ReportMenu.CHANGE_START_DATE,
     ),
     Window(
-        Const("Изменить дату конца периода"),
-        Calendar(id="calendar", on_click=on_end_date_selected),
-        Cancel(text=Const("Отмена")),
+        Const("Дата конца периода"),
+        Calendar(
+            id="date_to_calendar",
+            on_click=on_end_date_selected,
+            config=CalendarConfig(
+                min_date=date(2000, 1, 1),
+                max_date=date(2100, 12, 31),
+                month_columns=3,
+                years_per_page=9,
+                years_columns=3,
+            ),
+        ),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ReportMenu.CHANGE_END_DATE,
     ),
     Window(

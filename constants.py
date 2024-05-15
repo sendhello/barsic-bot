@@ -8,12 +8,6 @@ LIMIT_ID = "password_limit"
 BLOCKED_USER_ID = "user_blocked"
 
 
-class ReportType(StrEnum):
-    PEOPLE_IN_ZONE = auto()
-    TOTAL_REPORT = auto()
-    CASH_REPORT = auto()
-
-
 class ButtonID(StrEnum):
     START = auto()
     HELP = auto()
@@ -25,31 +19,29 @@ class ButtonID(StrEnum):
     OTHER_PERIOD = auto()
     SET = auto()
     REQUEST = auto()
-    CANCEL = auto()
+    CANCEL = "__cancel__"
     PRINT = auto()
     SAVE = auto()
     CHANGE_PERIOD = auto()
     HOME = auto()
 
 
-def text(id_: ReportType | ButtonID) -> str:
-    button_text = {
-        ButtonID.START: "Старт",
-        ButtonID.HELP: "Помощь",
-        ButtonID.REPORTS: "Отчеты",
-        ButtonID.SET_COMMANDS: "Обновить команды",
-        ReportType.PEOPLE_IN_ZONE: "Люди в зоне",
-        ReportType.TOTAL_REPORT: "Финансовый отчет",
-        ReportType.CASH_REPORT: "Суммовой отчет",
-        ButtonID.TODAY: "За сегодня",
-        ButtonID.YESTERDAY: "За вчера",
-        ButtonID.OTHER_PERIOD: "Произвольный период",
-        ButtonID.SET: "Установить",
-        ButtonID.REQUEST: "Выполнить запрос",
-        ButtonID.CANCEL: "Отменить",
-        ButtonID.PRINT: "Напечатать на экране",
-        ButtonID.SAVE: "Сохранить",
-        ButtonID.CHANGE_PERIOD: "Изменить период",
-        ButtonID.HOME: "На главную",
+def button_text(id_: ButtonID) -> str:
+    text = {
+        ButtonID.START: "🏁 Старт",
+        ButtonID.HELP: "ℹ️ Помощь",
+        ButtonID.CANCEL: "❌ Отмена",
     }
-    return button_text.get(id_)
+    return text.get(id_)
+
+
+class ReportType(StrEnum):
+    GoogleReport = "GoogleReport"
+    PlatAgentReport = "PlatAgentReport"
+    ItogReport = "ItogReport"
+
+
+REPORT_NAME_MAP = {
+    "finance_report": "Финансовый отчет",
+    "total_by_day": "Итоговый отчет с разбивкой",
+}
