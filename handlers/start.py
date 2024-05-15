@@ -2,9 +2,9 @@ import logging
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
-from aiogram.filters.command import Command, CommandStart
+from aiogram.filters.command import BotCommand, Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram_dialog import DialogManager
 
 from constants import PERMISSION_ID
@@ -33,6 +33,17 @@ async def start(message: Message, dialog_manager: DialogManager):
         return None
 
     await dialog_manager.start(MainMenu.START, data={"permission": permission})
+
+
+@router.message(StateFilter(None), Command("setup"))
+async def setup(message: Message, dialog_manager: DialogManager):
+    commands = [
+        BotCommand(command="/start", description="Старт"),
+        BotCommand(command="/setup", description="Сбросить настройки бота"),
+        BotCommand(command="/help", description="Помощь"),
+    ]
+    await message.bot.set_my_commands(commands)
+    await message.reply("Бот настроен. Перезагрузите телеграм", reply_markup=ReplyKeyboardRemove())
 
 
 @router.message(StateFilter(*NOT_TEXT_STATES))
