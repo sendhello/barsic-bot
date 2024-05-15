@@ -24,6 +24,7 @@ services:
       BARSIC_WEB_HOST: ${BARSIC_WEB_HOST}
       BARSIC_WEB_PORT: ${BARSIC_WEB_PORT}
       WRITE_PASSWORD_LIMIT_PER_DAY: ${WRITE_PASSWORD_LIMIT_PER_DAY}
+      CHECKBOX_SIZE: ${CHECKBOX_SIZE}
     volumes:
       - ./:/opt/app/
     networks:

@@ -25,4 +25,21 @@ class InfoMenu(StatesGroup):
 
 class ServiceDistributionMenu(StatesGroup):
     START = State()
-    FOUND_SERVICES = State()
+    REPORT_MENU = State()
+    SERVICES_GROUPS = State()
+    SERVICES_GROUP_ELEMENTS = State()
+    DELETE_SERVICES_ELEMENT = State()
+    ADD_ELEMENTS = State()
+    DISTRIBUTION_ELEMENTS = State()
+    END = State()
+
+
+# for pos in range(100):
+#     state_name = f"DISTRIBUTION_ELEMENTS_{pos}"
+#     state = State(state=state_name, group_name='ServiceDistributionMenu')
+#     state._group = ServiceDistributionMenu
+#     setattr(
+#         ServiceDistributionMenu,
+#         state_name,
+#         state
+#     )

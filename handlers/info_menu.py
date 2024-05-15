@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict
 
-from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.common import Whenable
@@ -15,10 +14,6 @@ from states import InfoMenu
 
 
 logger = logging.getLogger(__name__)
-
-router = Router()
-router.my_chat_member.filter(F.chat.type == "private")
-router.message.filter(F.chat.type == "private")
 
 
 async def on_dialog_start(start_data: Any, manager: DialogManager):
