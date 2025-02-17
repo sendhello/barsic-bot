@@ -48,11 +48,18 @@ class AppSettings(BaseSettings):
     admin_password: SecretStr = Field(validation_alias="ADMIN_PASSWORD")
     password_limit: int = Field(10, validation_alias="WRITE_PASSWORD_LIMIT_PER_DAY")
     checkbox_size: int = Field(10, validation_alias="CHECKBOX_SIZE")
+    purchased_goods_report_positions_source: str = Field(
+        default_factory=list, validation_alias="PURCHASED_GOODS_REPORT_POSITIONS"
+    )
 
     @property
     def user_agent(self):
         concatenated_name = self.project_name.replace(" ", "")
         return f"{concatenated_name}/1.0"
+
+    @property
+    def purchased_goods_report_positions(self) -> list[str]:
+        return self.purchased_goods_report_positions_source.replace("\\u0020", " ").split(",")
 
 
 class GatewaySettings(BaseSettings):

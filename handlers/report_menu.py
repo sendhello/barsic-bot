@@ -5,12 +5,23 @@ from typing import Any, Dict
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.common import Whenable
-from aiogram_dialog.widgets.kbd import Button, Calendar, CalendarConfig, Cancel, Checkbox, SwitchTo
+from aiogram_dialog.widgets.kbd import (
+    Button,
+    Calendar,
+    CalendarConfig,
+    Cancel,
+    Checkbox,
+    Column,
+    ManagedCheckbox,
+    SwitchTo,
+)
 from aiogram_dialog.widgets.text import Const, Format
 
-from constants import ButtonID, button_text
+from constants import ADMIN_KEY, PERMISSION_ID, REPORT_NAME_MAP, ButtonID, button_text
+from core.settings import settings
 from gateways.client import get_barsic_web_gateway
-from schemas.report import FinanceReportResult, PeopleInZone, TotalByDayResult
+from repositories.redis_repo import get_redis_repo
+from schemas.report import CorpServicesSumReportResult, FinanceReportResult, PeopleInZone, TotalByDayResult
 from states import ReportMenu
 
 
@@ -21,9 +32,49 @@ async def on_dialog_start(start_data: Any, manager: DialogManager):
     project = {
         "name": "Barsic Bot",
     }
+
+    user_id = manager.event.from_user.id
+    redis_repo = await get_redis_repo()
+    permission = await redis_repo.get_from_cache(key=f"{PERMISSION_ID}:{user_id}")
+    manager.dialog_data["user_permission"] = permission
+
     manager.dialog_data["project"] = project
     manager.dialog_data["start_date"] = date.today()
     manager.dialog_data["end_date"] = date.today()
+    manager.dialog_data["goods"] = settings.purchased_goods_report_positions
+    manager.dialog_data["checked_goods"] = []
+
+
+async def choose_goods_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
+    goods = dialog_manager.dialog_data["goods"]
+    while len(goods) < settings.checkbox_size:
+        goods.append(("", ""))
+
+    return {
+        "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
+        "goods": goods,
+    }
+
+
+def is_goods_not_null(data: dict, widget: Checkbox, manager: DialogManager) -> bool:
+    pos = int(widget.widget_id.split("_")[-1])
+    return pos < len(manager.dialog_data["goods"])
+
+
+async def goods_checkbox_handler(
+    event: CallbackQuery,
+    checkbox: ManagedCheckbox,
+    manager: DialogManager,
+):
+    data = manager.dialog_data
+    pos = int(checkbox.widget.widget_id.split("_")[-1])
+    good = data["goods"][pos]
+    if checkbox.is_checked():
+        data["checked_goods"].remove(good)
+        logger.info(f"Element {good} unchecked")
+    else:
+        data["checked_goods"].append(good)
+        logger.info(f"Element {good} checked")
 
 
 async def choose_report(
@@ -49,6 +100,11 @@ async def on_end_date_selected(callback: CallbackQuery, widget, manager: DialogM
 
 
 async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwargs) -> Dict[str, Any]:
+    if dialog_manager.find("hide_zero").is_checked():
+        hide_zero_text = "Скрывать нули"
+    else:
+        hide_zero_text = "Не скрывать нули"
+
     if dialog_manager.find("use_yadisk").is_checked():
         use_yadisk_text = "Сохранять отчеты в YandexDisk"
     else:
@@ -67,9 +123,11 @@ async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwar
     report_name_map = {
         "finance_report": "Финансовый отчет",
         "total_by_day": "Итоговый отчет с разбивкой",
+        "purchased_goods_report": "Отчет по купленным товарам",
     }
 
     return {
+        "hide_zero_text": hide_zero_text,
         "use_yadisk_text": use_yadisk_text,
         "telegram_report_text": telegram_report_text,
         "use_cache_text": use_cache_text,
@@ -83,12 +141,24 @@ async def get_client_count() -> PeopleInZone:
     return PeopleInZone.model_validate(response.json())
 
 
+def is_only_admin(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["user_permission"] == ADMIN_KEY
+
+
 def is_finance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "finance_report"
 
 
 def is_total_by_day(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "total_by_day"
+
+
+def is_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["report_type"] == "purchased_goods_report"
+
+
+def is_not_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["report_type"] != "purchased_goods_report"
 
 
 async def run_finance_report(
@@ -120,6 +190,24 @@ async def run_total_by_day(start_date: date, end_date: date | None, use_cache: b
     return TotalByDayResult.model_validate(response.json())
 
 
+async def run_purchased_goods_report(
+    start_date: date, end_date: date | None, goods: list[str], use_yadisk: bool = True, hide_zero: bool = True
+) -> CorpServicesSumReportResult:
+    if end_date is None:
+        end_date = start_date
+
+    gateway = get_barsic_web_gateway()
+    response = await gateway.create_purchased_goods_report(
+        start_date=start_date,
+        end_date=end_date,
+        goods=goods,
+        use_yadisk=use_yadisk,
+        hide_zero=hide_zero,
+        db_name="Aquapark_Ulyanovsk",
+    )
+    return CorpServicesSumReportResult.model_validate(response.json())
+
+
 async def run_report(
     callback: CallbackQuery,
     button: Button,
@@ -128,7 +216,9 @@ async def run_report(
     report_type = manager.dialog_data["report_type"]
     start_date = manager.dialog_data["start_date"]
     end_date = manager.dialog_data["end_date"]
+    checked_goods = manager.dialog_data["checked_goods"]
     use_yadisk = manager.find("use_yadisk").is_checked()
+    hide_zero = manager.find("hide_zero").is_checked()
     telegram_report = manager.find("telegram_report").is_checked()
     use_cache = manager.find("use_cache").is_checked()
 
@@ -157,9 +247,31 @@ async def run_report(
             await manager.update({"report_result": f"{message}\n{detail}"})
             await manager.switch_to(ReportMenu.SHOW_REPORT)
 
+        case "purchased_goods_report":
+            result = await run_purchased_goods_report(
+                start_date=start_date,
+                end_date=end_date,
+                goods=checked_goods,
+                use_yadisk=use_yadisk,
+                hide_zero=hide_zero,
+            )
+            manager.dialog_data["checked_goods"] = []
+            message = f"{'Отчет по купленным товарам сформирован' if result.ok else 'Ошибка'}"
+            detail = f"{result.public_url or result.local_path}" if result.ok else result.detail
+            await manager.update({"report_result": f"{message}\n{detail}"})
+            await manager.switch_to(ReportMenu.SHOW_REPORT)
+
         case _:
             logger.error(f"Неверный тип отчета: {report_type}")
             await manager.switch_to(ReportMenu.CHOOSE_REPORT)
+
+
+async def choose_goods(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    await manager.switch_to(ReportMenu.CHOOSE_GOODS)
 
 
 report_menu = Dialog(
@@ -170,10 +282,17 @@ report_menu = Dialog(
             Const("Финансовый отчет"),
             id="finance_report",
             on_click=choose_report,
+            when=is_only_admin,
         ),
         Button(
             Const("Итоговый с разбивкой"),
             id="total_by_day",
+            on_click=choose_report,
+            when=is_only_admin,
+        ),
+        Button(
+            Const("По купленным товарам"),
+            id="purchased_goods_report",
             on_click=choose_report,
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
@@ -192,11 +311,25 @@ report_menu = Dialog(
             state=ReportMenu.CHANGE_END_DATE,
         ),
         Checkbox(
+            checked_text=Const("[x] Скрывать нули"),
+            unchecked_text=Const("[ ] Не скрывать нули"),
+            id="hide_zero",
+            default=True,
+            when=is_purchased_goods_report,
+        ),
+        Checkbox(
             checked_text=Const("[x] Сохранять в YandexDisk"),
             unchecked_text=Const("[ ] Не сохранять в YandexDisk"),
             id="use_yadisk",
             default=True,
             when=is_finance_report,
+        ),
+        Checkbox(
+            checked_text=Const("[x] Сохранять в YandexDisk"),
+            unchecked_text=Const("[ ] Не сохранять в YandexDisk"),
+            id="use_yadisk",
+            default=True,
+            when=is_purchased_goods_report,
         ),
         Checkbox(
             checked_text=Const("[x] Отправлять в Telegram"),
@@ -213,9 +346,16 @@ report_menu = Dialog(
             when=is_total_by_day,
         ),
         Button(
+            Const("📝 Выбрать услуги"),
+            id="choose_goods",
+            on_click=choose_goods,
+            when=is_purchased_goods_report,
+        ),
+        Button(
             Const("▶️Сформировать отчет"),
             id="build_report",
             on_click=run_report,
+            when=is_not_purchased_goods_report,
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
         getter=finance_report_checkboxes_getter,
@@ -252,6 +392,30 @@ report_menu = Dialog(
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ReportMenu.CHANGE_END_DATE,
+    ),
+    Window(
+        Format("{report_name}"),
+        Const("Выберите услуги для отчета"),
+        Column(
+            *[
+                Checkbox(
+                    checked_text=Format(f"🌱 {{goods[{pos}]}}"),
+                    unchecked_text=Format(f"⛌ {{goods[{pos}]}}"),
+                    id=f"good_{pos}",
+                    on_click=goods_checkbox_handler,
+                    when=is_goods_not_null,
+                )
+                for pos in range(len(settings.purchased_goods_report_positions))
+            ],
+        ),
+        Button(
+            Const("▶️Сформировать отчет"),
+            id="build_report",
+            on_click=run_report,
+        ),
+        Cancel(text=Const(button_text(ButtonID.CANCEL))),
+        getter=choose_goods_getter,
+        state=ReportMenu.CHOOSE_GOODS,
     ),
     Window(
         Format("{dialog_data[report_result]}"),

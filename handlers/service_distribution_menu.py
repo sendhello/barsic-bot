@@ -342,8 +342,8 @@ service_distribution_menu = Dialog(
         Column(
             *[
                 Checkbox(
-                    checked_text=Format(f"✔︎ {{new_elements[{pos}]}}"),
-                    unchecked_text=Format(f"✘ {{new_elements[{pos}]}}"),
+                    checked_text=Format(f"🌱 {{new_elements[{pos}]}}"),
+                    unchecked_text=Format(f"⛌ {{new_elements[{pos}]}}"),
                     id=f"new_element_{pos}",
                     on_click=new_element_checkbox_handler,
                     when=is_new_element_not_null,
@@ -422,8 +422,8 @@ service_distribution_menu = Dialog(
         Column(
             *[
                 Checkbox(
-                    checked_text=Format(f"✔︎ {{elements[{pos}][0]}}"),
-                    unchecked_text=Format(f"✘ {{elements[{pos}][0]}}"),
+                    checked_text=Format(f"🌱 {{elements[{pos}][0]}}"),
+                    unchecked_text=Format(f"⛌ {{elements[{pos}][0]}}"),
                     id=f"element_{pos}",
                     on_click=element_checkbox_handler,
                     when=is_element_not_null,
