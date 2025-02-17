@@ -19,7 +19,7 @@ WORKDIR $APP_PATH
 # RUN apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev
 
 COPY poetry.lock pyproject.toml ./
-RUN pip install poetry && poetry install --no-dev
+RUN pip install poetry==1.8 && poetry install --no-dev
 COPY . .
 
 ENTRYPOINT sh barsic_bot.sh
