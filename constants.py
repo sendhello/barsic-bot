@@ -44,4 +44,5 @@ class ReportType(StrEnum):
 REPORT_NAME_MAP = {
     "finance_report": "Финансовый отчет",
     "total_by_day": "Итоговый отчет с разбивкой",
+    "purchased_goods_report": "Отчет по купленным товарам",
 }

@@ -21,6 +21,14 @@ class FinanceReportResult(BaseModel):
     detail: str | None = Field(None)
 
 
+class CorpServicesSumReportResult(BaseModel):
+    ok: bool = Field(False)
+    local_path: str | None = Field(None)
+    public_url: AnyUrl | None = Field(None)
+    download_link: AnyUrl | None = Field(None)
+    detail: str | None = Field(None)
+
+
 class ServicesGroup(BaseModel):
     id: UUID
     title: str

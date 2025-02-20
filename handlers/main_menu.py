@@ -48,12 +48,10 @@ async def get_password(message: Message, dialog: DialogProtocol, manager: Dialog
 
 
 def is_admin(data: dict, widget: Whenable, manager: DialogManager) -> bool:
-    logger.warning(f"TEMP: {is_admin}")
     return data["dialog_data"]["permission"] in [ADMIN_KEY]
 
 
 def is_user_or_admin(data: dict, widget: Whenable, manager: DialogManager) -> bool:
-    logger.warning(f"TEMP: {is_user_or_admin}")
     return data["dialog_data"]["permission"] in [ADMIN_KEY, USER_KEY]
 
 
@@ -86,7 +84,7 @@ main_menu = Dialog(
             Const("⚙️ Генерация отчетов"),
             id="report",
             state=ReportMenu.START,
-            when=is_admin,
+            when=is_user_or_admin,
         ),
         Start(
             Const("🏗️ Распределение услуг"),

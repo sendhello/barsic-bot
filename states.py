@@ -11,6 +11,7 @@ class ReportMenu(StatesGroup):
     CHOOSE_REPORT = State()
     CHANGE_START_DATE = State()
     CHANGE_END_DATE = State()
+    CHOOSE_GOODS = State()
     BUILD_REPORT = State()
     SHOW_REPORT = State()
 
