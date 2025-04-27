@@ -81,7 +81,7 @@ async def search_new_services_btn_handler(
     if result:
         await manager.update(
             {
-                "new_elements": result,
+                "new_elements": result[:50],  # Отдаем не более 50 кнопок одновременно
             }
         )
         await manager.switch_to(ServiceDistributionMenu.DISTRIBUTION_ELEMENTS)
