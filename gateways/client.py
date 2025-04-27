@@ -68,7 +68,7 @@ class BarsicWebGateway(BaseGateway):
                 "db_name": db_name,
             },
         )
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -78,7 +78,7 @@ class BarsicWebGateway(BaseGateway):
 
     async def get_services_groups(self, report_type: ReportType) -> Response:
         response = await self.get(url="/api/v1/report_name/", params={"report_name": report_type.value})
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -89,7 +89,7 @@ class BarsicWebGateway(BaseGateway):
             raise HTTPError(f"Report type with name '{report_type}' not found")
 
         response = await self.get(url="/api/v1/report_group/", params={"report_name_id": response.json()[0]["id"]})
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -99,7 +99,7 @@ class BarsicWebGateway(BaseGateway):
 
     async def get_service_elements(self, report_group_id: UUID) -> Response:
         response = await self.get(url="/api/v1/report_element/", params={"report_group_id": report_group_id})
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -112,7 +112,7 @@ class BarsicWebGateway(BaseGateway):
             url=f"/api/v1/report_group/{str(group_id)}/add_elements/",
             data=orjson.dumps(new_elements),
         )
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -122,7 +122,7 @@ class BarsicWebGateway(BaseGateway):
 
     async def delete_service_element(self, service_element_id: UUID) -> Response:
         response = await self.delete(url=f"/api/v1/report_element/{str(service_element_id)}")
-        logger.info(f"Response: {response.json()}")
+        logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()
         except HTTPError as e:
