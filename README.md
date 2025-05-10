@@ -1,41 +1,37 @@
-# Сервис Barsic Web
+# Barsic Bot Service
 
-Бот для взаимодействия с API сервиса "Barsic API"
+A bot for interacting with the "Barsic API" service.
 
-* **Язык приложения:** Python 3.12
-* **Поддерживаемые протоколы взаимодействия:** REST API
-* **Инфраструктурные зависимости:** Postgres, Redis
-* **Зависимости от системных пакетов:** отсутствуют
-* **Зависимости от расширений PostgreSQL:** отсутствуют
-* **Часть окружения:** development
-* **Минимальные системные требования:** 1 CPU, 1Gb RAM
+* **Application Language:** Python 3.12
+* **Supported Communication Protocols:** REST API
+* **Infrastructure Dependencies:** Redis
+* **System Package Dependencies:** None
+* **PostgreSQL Extension Dependencies:** None
+* **Environment Type:** development
+* **Minimum System Requirements:** 1 CPU, 1Gb RAM
 
-## Поддержка сервиса
+## Service Support
 
-Группа разработки:
+Development team:
 
-* Иван Баженов (*[@sendhello](https://github.com/sendhello)*)
+* Ivan Bazhenov (*[@sendhello](https://github.com/sendhello)*)
 
-## Описание обязательных методов для запуска сервиса
+## Required Methods to Launch the Service
 
-### Запуск сервиса
+### Launching the Service
 ```commandline
-# Из корня проекта
+# on the root
 python main.py
 ```
 
-## Описание дополнительных методов сервиса
+## Additional Service Methods
 
-### Описание ENV переменных
+### Description of ENV Variables
 
-| Имя переменной           | Возможное значение                         | Описание                                                                                |
-|:-------------------------|--------------------------------------------|:----------------------------------------------------------------------------------------|
-| DEBUG                    | False                                      | Режим отладки                                                                           |
-| PROJECT_NAME             | Barsic                                     | Название сервиса (отображается в Swagger)                                               |
-| REDIS_HOST               | redis                                      | Имя сервера Redis                                                                       |
-| REDIS_PORT               | 6379                                       | Порт сервера Redis                                                                      |
-| POSTGRES_HOST            | localhost                                  | Host Postgres                                                                           |
-| POSTGRES_PORT            | 5432                                       | Порт Postgres                                                                           |
-| POSTGRES_DB              | barsic                                     | Имя БД Postgres                                                                         |
-| POSTGRES_USER            | app                                        | Имя пользователя Postgres                                                               |
-| POSTGRES_PASSWORD        | 123qwe                                     | Пароль пользователя Postgres                                                            |
+
+| Environment Variable Name | Possible Value | Description                         |
+|:--------------------------|----------------|:------------------------------------|
+| DEBUG                     | False          | Debug mode                          |
+| PROJECT_NAME              | Barsic         | Service name (displayed in Swagger) |
+| REDIS_HOST                | redis          | Redis server name                   |
+| REDIS_PORT                | 6379           | Redis server port                   |
