@@ -10,25 +10,6 @@ from core.logger import LOGGING
 logging_config.dictConfig(LOGGING)
 
 
-class PostgresSettings(BaseSettings):
-    """Настройки Postgres."""
-
-    echo_database: bool = Field(False, validation_alias="ECHO_DATABASE")
-    postgres_host: str = Field(validation_alias="POSTGRES_HOST")
-    postgres_port: int = Field(validation_alias="POSTGRES_PORT")
-    postgres_db: str = Field(validation_alias="POSTGRES_DB")
-    postgres_user: str = Field(validation_alias="POSTGRES_USER")
-    postgres_password: str = Field(validation_alias="POSTGRES_PASSWORD")
-
-    @property
-    def pg_dsn(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.postgres_user}"
-            f":{self.postgres_password}@{self.postgres_host}:"
-            f"{self.postgres_port}/{self.postgres_db}"
-        )
-
-
 class RedisSettings(BaseSettings):
     """Настройки Redis."""
 
