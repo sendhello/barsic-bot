@@ -4,6 +4,7 @@
 [![aiogram](https://img.shields.io/badge/aiogram-3.4.1-green.svg)](https://aiogram.dev/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE.md)
 [![Redis](https://img.shields.io/badge/redis-5.0+-red.svg)](https://redis.io/)
+[![CodeQL](https://github.com/sendhello/barsic-bot/actions/workflows/codeql.yml/badge.svg)](https://github.com/sendhello/barsic-bot/actions/workflows/codeql.yml)
 
 A comprehensive Telegram bot service for interacting with the Barsic API platform. Built with modern async Python using aiogram framework, featuring role-based access control, dialog management, and Redis-based state persistence.
 
