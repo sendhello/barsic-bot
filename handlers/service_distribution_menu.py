@@ -83,10 +83,12 @@ async def search_new_services_btn_handler(
     if result:
         await manager.update(
             {
-                "new_elements": result[:50],  # Отдаем не более 50 кнопок одновременно
+                "new_elements": result,
+                "new_elements_page": 0,
             }
         )
         await manager.switch_to(ServiceDistributionMenu.DISTRIBUTION_ELEMENTS)
+        await _sync_new_elements_checkboxes(manager)
     else:
         await manager.update(
             {
@@ -162,6 +164,21 @@ async def _sync_services_group_elements_checkboxes(manager: DialogManager):
             is_checked = elements[element_position] in checked_elements
 
         await manager.find(f"element_{pos}").set_checked(is_checked)
+
+
+async def _sync_new_elements_checkboxes(manager: DialogManager):
+    current_page, _ = _get_current_page(manager, "new_elements_page", "new_elements")
+    page_size = _get_page_size()
+    checked_elements = manager.dialog_data.get("checked_elements", [])
+    new_elements = manager.dialog_data.get("new_elements", [])
+
+    for pos in range(settings.checkbox_size):
+        element_position = current_page * page_size + pos
+        is_checked = False
+        if element_position < len(new_elements):
+            is_checked = new_elements[element_position] in checked_elements
+
+        await manager.find(f"new_element_{pos}").set_checked(is_checked)
 
 
 async def services_groups_prev_page_btn_handler(
@@ -268,6 +285,54 @@ async def add_elements_services_groups_last_page_btn_handler(
     await manager.update({"add_elements_services_groups_page": total_pages - 1})
 
 
+async def new_elements_prev_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_page(manager, "new_elements_page", "new_elements")
+    if current_page <= 0:
+        return
+    await manager.update({"new_elements_page": current_page - 1})
+    await _sync_new_elements_checkboxes(manager)
+
+
+async def new_elements_first_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_page(manager, "new_elements_page", "new_elements")
+    if current_page <= 0:
+        return
+    await manager.update({"new_elements_page": 0})
+    await _sync_new_elements_checkboxes(manager)
+
+
+async def new_elements_next_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_page(manager, "new_elements_page", "new_elements")
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"new_elements_page": current_page + 1})
+    await _sync_new_elements_checkboxes(manager)
+
+
+async def new_elements_last_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_page(manager, "new_elements_page", "new_elements")
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"new_elements_page": total_pages - 1})
+    await _sync_new_elements_checkboxes(manager)
+
+
 async def services_groups_radio_handler(
     event: CallbackQuery,
     select: ManagedRadio,
@@ -350,7 +415,11 @@ async def new_element_checkbox_handler(
     data = manager.dialog_data
     checked_elements = data["checked_elements"]
     pos = int(checkbox.widget.widget_id.split("_")[-1])
-    element = data["new_elements"][pos]
+    current_page, _ = _get_current_page(manager, "new_elements_page", "new_elements")
+    element_position = current_page * _get_page_size() + pos
+    if element_position >= len(data["new_elements"]):
+        return
+    element = data["new_elements"][element_position]
     if checkbox.is_checked():
         if element in checked_elements:
             checked_elements.remove(element)
@@ -508,13 +577,19 @@ async def service_elements_getter(dialog_manager: DialogManager, **kwargs) -> di
 
 
 async def distribution_elements_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
-    new_elements = deepcopy(dialog_manager.dialog_data["new_elements"])
+    current_page, total_pages = _get_current_page(dialog_manager, "new_elements_page", "new_elements")
+    all_new_elements = deepcopy(dialog_manager.dialog_data["new_elements"])
+    page_size = _get_page_size()
+    new_elements = all_new_elements[current_page * page_size : (current_page + 1) * page_size]
     while len(new_elements) < settings.checkbox_size:
         new_elements.append("")
 
     return {
         "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
         "new_elements": new_elements,
+        "new_elements_page": current_page,
+        "new_elements_page_human": current_page + 1,
+        "new_elements_total_pages": total_pages,
     }
 
 
@@ -555,7 +630,9 @@ def is_element_not_null(data: dict, widget: Checkbox, manager: DialogManager) ->
 
 def is_new_element_not_null(data: dict, widget: Checkbox, manager: DialogManager) -> bool:
     pos = int(widget.widget_id.split("_")[-1])
-    return pos < len(manager.dialog_data["new_elements"])
+    current_page, _ = _get_current_page(manager, "new_elements_page", "new_elements")
+    element_position = current_page * _get_page_size() + pos
+    return element_position < len(manager.dialog_data["new_elements"])
 
 
 def has_services_groups_prev_page(data: dict, widget: Button, manager: DialogManager) -> bool:
@@ -580,6 +657,14 @@ def has_services_group_elements_prev_page(data: dict, widget: Button, manager: D
 
 def has_services_group_elements_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
     return data["services_group_elements_page"] < data["services_group_elements_total_pages"] - 1
+
+
+def has_new_elements_prev_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["new_elements_page"] > 0
+
+
+def has_new_elements_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["new_elements_page"] < data["new_elements_total_pages"] - 1
 
 
 service_distribution_menu = Dialog(
@@ -634,28 +719,33 @@ service_distribution_menu = Dialog(
                 for pos in range(settings.checkbox_size)
             ],
         ),
-        # Row(
-        #     Button(
-        #         Const("⏮"),
-        #         id="all_left",
-        #         on_click=first_page_handler,
-        #     ),
-        #     Button(
-        #         Const("◀"),
-        #         id="left",
-        #         on_click=back_page_handler,
-        #     ),
-        #     Button(
-        #         Const("▶"),
-        #         id="right",
-        #         on_click=next_page_handler,
-        #     ),
-        #     Button(
-        #         Const("⏭"),
-        #         id="all_right",
-        #         on_click=last_page_handler,
-        #     ),
-        # ),
+        Format("Страница {new_elements_page_human}/{new_elements_total_pages}"),
+        Row(
+            Button(
+                Const("⏮"),
+                id="new_elements_first_page",
+                on_click=new_elements_first_page_btn_handler,
+                when=has_new_elements_prev_page,
+            ),
+            Button(
+                Const("◀"),
+                id="new_elements_prev_page",
+                on_click=new_elements_prev_page_btn_handler,
+                when=has_new_elements_prev_page,
+            ),
+            Button(
+                Const("▶"),
+                id="new_elements_next_page",
+                on_click=new_elements_next_page_btn_handler,
+                when=has_new_elements_next_page,
+            ),
+            Button(
+                Const("⏭"),
+                id="new_elements_last_page",
+                on_click=new_elements_last_page_btn_handler,
+                when=has_new_elements_next_page,
+            ),
+        ),
         Button(
             Const("🚚 Распределить выбранные в..."),
             id="distribution_elements",

@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from math import ceil
 from typing import Any
 
 from aiogram.types import CallbackQuery
@@ -13,6 +14,7 @@ from aiogram_dialog.widgets.kbd import (
     Checkbox,
     Column,
     ManagedCheckbox,
+    Row,
     SwitchTo,
 )
 from aiogram_dialog.widgets.text import Const, Format
@@ -31,6 +33,7 @@ from schemas.report import (
 from states import ReportMenu
 
 logger = logging.getLogger(__name__)
+MIN_PAGE_SIZE = 1
 
 
 async def on_dialog_start(start_data: Any, manager: DialogManager):
@@ -46,24 +49,68 @@ async def on_dialog_start(start_data: Any, manager: DialogManager):
     manager.dialog_data["project"] = project
     manager.dialog_data["start_date"] = date.today()
     manager.dialog_data["end_date"] = date.today()
-    manager.dialog_data["goods"] = settings.purchased_goods_report_positions
+    manager.dialog_data["goods"] = list(settings.purchased_goods_report_positions)
     manager.dialog_data["checked_goods"] = []
+    manager.dialog_data["goods_page"] = 0
+
+
+def _get_page_size() -> int:
+    return max(settings.checkbox_size, MIN_PAGE_SIZE)
+
+
+def _get_goods_page_data(dialog_manager: DialogManager) -> tuple[int, int]:
+    goods_count = len(dialog_manager.dialog_data.get("goods", []))
+    total_pages = max(1, ceil(goods_count / _get_page_size())) if goods_count else 1
+    current_page = dialog_manager.dialog_data.get("goods_page", 0)
+    current_page = max(0, min(current_page, total_pages - 1))
+    return current_page, total_pages
+
+
+async def _sync_goods_checkboxes(manager: DialogManager):
+    current_page, _ = _get_goods_page_data(manager)
+    page_size = _get_page_size()
+    checked_goods = manager.dialog_data.get("checked_goods", [])
+    goods = manager.dialog_data.get("goods", [])
+
+    for pos in range(settings.checkbox_size):
+        good_position = current_page * page_size + pos
+        is_checked = False
+        if good_position < len(goods):
+            is_checked = goods[good_position] in checked_goods
+
+        await manager.find(f"good_{pos}").set_checked(is_checked)
 
 
 async def choose_goods_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
-    goods = dialog_manager.dialog_data["goods"]
+    current_page, total_pages = _get_goods_page_data(dialog_manager)
+    goods = list(dialog_manager.dialog_data["goods"])
+    page_size = _get_page_size()
+    goods = goods[current_page * page_size : (current_page + 1) * page_size]
     while len(goods) < settings.checkbox_size:
-        goods.append(("", ""))
+        goods.append("")
 
     return {
         "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
         "goods": goods,
+        "goods_page": current_page,
+        "goods_page_human": current_page + 1,
+        "goods_total_pages": total_pages,
     }
 
 
 def is_goods_not_null(data: dict, widget: Checkbox, manager: DialogManager) -> bool:
     pos = int(widget.widget_id.split("_")[-1])
-    return pos < len(manager.dialog_data["goods"])
+    current_page, _ = _get_goods_page_data(manager)
+    good_position = current_page * _get_page_size() + pos
+    return good_position < len(manager.dialog_data["goods"])
+
+
+def has_goods_prev_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["goods_page"] > 0
+
+
+def has_goods_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["goods_page"] < data["goods_total_pages"] - 1
 
 
 async def goods_checkbox_handler(
@@ -72,14 +119,69 @@ async def goods_checkbox_handler(
     manager: DialogManager,
 ):
     data = manager.dialog_data
+    checked_goods = data["checked_goods"]
     pos = int(checkbox.widget.widget_id.split("_")[-1])
-    good = data["goods"][pos]
+    current_page, _ = _get_goods_page_data(manager)
+    good_position = current_page * _get_page_size() + pos
+    if good_position >= len(data["goods"]):
+        return
+    good = data["goods"][good_position]
     if checkbox.is_checked():
-        data["checked_goods"].remove(good)
+        if good in checked_goods:
+            checked_goods.remove(good)
         logger.info(f"Element {good} unchecked")
     else:
-        data["checked_goods"].append(good)
+        if good not in checked_goods:
+            checked_goods.append(good)
         logger.info(f"Element {good} checked")
+
+
+async def goods_prev_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_goods_page_data(manager)
+    if current_page <= 0:
+        return
+    await manager.update({"goods_page": current_page - 1})
+    await _sync_goods_checkboxes(manager)
+
+
+async def goods_first_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_goods_page_data(manager)
+    if current_page <= 0:
+        return
+    await manager.update({"goods_page": 0})
+    await _sync_goods_checkboxes(manager)
+
+
+async def goods_next_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_goods_page_data(manager)
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"goods_page": current_page + 1})
+    await _sync_goods_checkboxes(manager)
+
+
+async def goods_last_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_goods_page_data(manager)
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"goods_page": total_pages - 1})
+    await _sync_goods_checkboxes(manager)
 
 
 async def choose_report(
@@ -330,7 +432,9 @@ async def choose_goods(
     button: Button,
     manager: DialogManager,
 ):
+    await manager.update({"goods_page": 0})
     await manager.switch_to(ReportMenu.CHOOSE_GOODS)
+    await _sync_goods_checkboxes(manager)
 
 
 report_menu = Dialog(
@@ -484,8 +588,35 @@ report_menu = Dialog(
                     on_click=goods_checkbox_handler,
                     when=is_goods_not_null,
                 )
-                for pos in range(len(settings.purchased_goods_report_positions))
+                for pos in range(settings.checkbox_size)
             ],
+        ),
+        Format("Страница {goods_page_human}/{goods_total_pages}"),
+        Row(
+            Button(
+                Const("⏮"),
+                id="goods_first_page",
+                on_click=goods_first_page_btn_handler,
+                when=has_goods_prev_page,
+            ),
+            Button(
+                Const("◀"),
+                id="goods_prev_page",
+                on_click=goods_prev_page_btn_handler,
+                when=has_goods_prev_page,
+            ),
+            Button(
+                Const("▶"),
+                id="goods_next_page",
+                on_click=goods_next_page_btn_handler,
+                when=has_goods_next_page,
+            ),
+            Button(
+                Const("⏭"),
+                id="goods_last_page",
+                on_click=goods_last_page_btn_handler,
+                when=has_goods_next_page,
+            ),
         ),
         Button(
             Const("▶️Сформировать отчет"),
