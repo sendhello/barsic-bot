@@ -1,11 +1,12 @@
 import logging
 import operator
 from copy import deepcopy
+from math import ceil
 from typing import Any
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Button, Cancel, Checkbox, Column, ManagedCheckbox, Radio
+from aiogram_dialog.widgets.kbd import Button, Cancel, Checkbox, Column, ManagedCheckbox, Radio, Row
 from aiogram_dialog.widgets.kbd.select import ManagedRadio
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -17,6 +18,7 @@ from states import ServiceDistributionMenu
 
 
 logger = logging.getLogger(__name__)
+SERVICES_GROUPS_PAGE_SIZE = 20
 
 
 # async def next_page_handler(
@@ -108,13 +110,84 @@ async def view_services_groups_btn_handler(
     }
     report_type = report_map[manager.dialog_data["report_type"]]
     response = await gateway.get_services_groups(report_type=report_type)
+
     services_groups = [ServicesGroup.model_validate(raw) for raw in response.json()]
+    filtered_services_groups = []
+    if any("/" in sg.title for sg in services_groups):
+        for sg in services_groups:
+            if len(sg.title.split("/")) < 3:
+                continue
+
+            sg.title = sg.title.split("/")[2]
+            filtered_services_groups.append(sg)
+
+    services_groups = filtered_services_groups or services_groups
+
     await manager.update(
         {
             "services_groups": services_groups,
+            "services_groups_page": 0,
         }
     )
     await manager.switch_to(ServiceDistributionMenu.SERVICES_GROUPS)
+
+
+def _get_services_groups_total_pages(services_groups: list[ServicesGroup]) -> int:
+    if not services_groups:
+        return 1
+    return ceil(len(services_groups) / SERVICES_GROUPS_PAGE_SIZE)
+
+
+def _get_current_services_groups_page(dialog_manager: DialogManager) -> tuple[int, int]:
+    services_groups = dialog_manager.dialog_data.get("services_groups", [])
+    total_pages = _get_services_groups_total_pages(services_groups)
+    current_page = dialog_manager.dialog_data.get("services_groups_page", 0)
+    current_page = max(0, min(current_page, total_pages - 1))
+    return current_page, total_pages
+
+
+async def services_groups_prev_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_services_groups_page(manager)
+    if current_page <= 0:
+        return
+    await manager.update({"services_groups_page": current_page - 1})
+
+
+async def services_groups_first_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_services_groups_page(manager)
+    if current_page <= 0:
+        return
+    await manager.update({"services_groups_page": 0})
+
+
+async def services_groups_next_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_services_groups_page(manager)
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"services_groups_page": current_page + 1})
+
+
+async def services_groups_last_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_services_groups_page(manager)
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"services_groups_page": total_pages - 1})
 
 
 async def services_groups_radio_handler(
@@ -123,15 +196,6 @@ async def services_groups_radio_handler(
     dialog_manager: DialogManager,
     data: Any,
 ):
-    if select.widget.widget_id == "next_page":
-        await dialog_manager.update(
-            {
-                "services_groups_page": dialog_manager.dialog_data.get("services_groups_page", 0) + 1,
-            }
-        )
-        await dialog_manager.switch_to(ServiceDistributionMenu.SERVICES_GROUPS)
-        return
-
     gateway = get_barsic_web_gateway()
 
     services_group = None
@@ -195,7 +259,19 @@ async def distribution_elements_btn_handler(
     }
     report_type = report_map[manager.dialog_data["report_type"]]
     response = await gateway.get_services_groups(report_type=report_type)
+
     services_groups = [ServicesGroup.model_validate(raw) for raw in response.json()]
+    filtered_services_groups = []
+    if any("/" in sg.title for sg in services_groups):
+        for sg in services_groups:
+            if len(sg.title.split("/")) < 3:
+                continue
+
+            sg.title = sg.title.split("/")[2]
+            filtered_services_groups.append(sg)
+
+    services_groups = filtered_services_groups or services_groups
+
     await manager.update(
         {
             "services_groups": services_groups,
@@ -260,14 +336,18 @@ async def report_menu_getter(dialog_manager: DialogManager, **kwargs) -> dict[st
 
 
 async def services_groups_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
+    current_page, total_pages = _get_current_services_groups_page(dialog_manager)
     services_groups = [(group.title, group.id) for group in dialog_manager.dialog_data["services_groups"]]
-    current_page = dialog_manager.dialog_data.get("services_groups_page", 0)
-    services_groups = services_groups[current_page * 20 : (current_page + 1) * 20]
-    # services_groups.append(("> Next page", "next_page"))
+    services_groups = services_groups[
+        current_page * SERVICES_GROUPS_PAGE_SIZE : (current_page + 1) * SERVICES_GROUPS_PAGE_SIZE
+    ]
+
     return {
         "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
         "services_groups": services_groups,
         "services_groups_page": current_page,
+        "services_groups_page_human": current_page + 1,
+        "services_groups_total_pages": total_pages,
     }
 
 
@@ -318,6 +398,14 @@ def is_element_not_null(data: dict, widget: Checkbox, manager: DialogManager) ->
 def is_new_element_not_null(data: dict, widget: Checkbox, manager: DialogManager) -> bool:
     pos = int(widget.widget_id.split("_")[-1])
     return pos < len(manager.dialog_data["new_elements"])
+
+
+def has_services_groups_prev_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["services_groups_page"] > 0
+
+
+def has_services_groups_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["services_groups_page"] < data["services_groups_total_pages"] - 1
 
 
 service_distribution_menu = Dialog(
@@ -431,6 +519,33 @@ service_distribution_menu = Dialog(
                 item_id_getter=operator.itemgetter(1),
                 items="services_groups",
                 on_click=services_groups_radio_handler,
+            ),
+        ),
+        Format("Страница {services_groups_page_human}/{services_groups_total_pages}"),
+        Row(
+            Button(
+                Const("⏮"),
+                id="services_groups_first_page",
+                on_click=services_groups_first_page_btn_handler,
+                when=has_services_groups_prev_page,
+            ),
+            Button(
+                Const("◀"),
+                id="services_groups_prev_page",
+                on_click=services_groups_prev_page_btn_handler,
+                when=has_services_groups_prev_page,
+            ),
+            Button(
+                Const("▶"),
+                id="services_groups_next_page",
+                on_click=services_groups_next_page_btn_handler,
+                when=has_services_groups_next_page,
+            ),
+            Button(
+                Const("⏭"),
+                id="services_groups_last_page",
+                on_click=services_groups_last_page_btn_handler,
+                when=has_services_groups_next_page,
             ),
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
