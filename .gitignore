@@ -229,4 +229,4 @@ cython_debug/
 
 # Other
 config.yaml
-.env.dev
+.env.local

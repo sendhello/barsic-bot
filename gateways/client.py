@@ -60,6 +60,25 @@ class BarsicWebGateway(BaseGateway):
             },
         )
 
+    async def create_attendance_report(
+        self,
+        start_date: date,
+        end_date: date,
+        save_to_yandex: bool,
+        save_to_google: bool,
+        use_cache: bool,
+    ) -> Response:
+        return await self.post(
+            url="/api/v1/reports/create_attendance_report",
+            params={
+                "date_from": datetime.combine(start_date, datetime.min.time()),
+                "date_to": datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+                "save_to_yandex": save_to_yandex,
+                "save_to_google": save_to_google,
+                "use_cache": use_cache,
+            },
+        )
+
     async def get_new_services(self, report_type: ReportType, db_name: str) -> Response:
         response = await self.get(
             url="/api/v1/report_settings/new_services",
@@ -88,7 +107,7 @@ class BarsicWebGateway(BaseGateway):
         if not services_groups:
             raise HTTPError(f"Report type with name '{report_type}' not found")
 
-        response = await self.get(url="/api/v1/report_group/", params={"report_name_id": response.json()[0]["id"]})
+        response = await self.get(url="/api/v1/report_group/", params={"report_name_id": services_groups[0].id})
         logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()

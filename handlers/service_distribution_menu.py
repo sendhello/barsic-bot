@@ -71,6 +71,7 @@ async def search_new_services_btn_handler(
     report_map = {
         "finance_report": ReportType.GoogleReport,
         "total_by_day": ReportType.PlatAgentReport,
+        "attendance_report": ReportType.Attendance,
     }
     report_type = report_map[manager.dialog_data["report_type"]]
     report_name = REPORT_NAME_MAP[manager.dialog_data["report_type"]]
@@ -103,6 +104,7 @@ async def view_services_groups_btn_handler(
     report_map = {
         "finance_report": ReportType.GoogleReport,
         "total_by_day": ReportType.PlatAgentReport,
+        "attendance_report": ReportType.Attendance,
     }
     report_type = report_map[manager.dialog_data["report_type"]]
     response = await gateway.get_services_groups(report_type=report_type)
@@ -121,6 +123,15 @@ async def services_groups_radio_handler(
     dialog_manager: DialogManager,
     data: Any,
 ):
+    if select.widget.widget_id == "next_page":
+        await dialog_manager.update(
+            {
+                "services_groups_page": dialog_manager.dialog_data.get("services_groups_page", 0) + 1,
+            }
+        )
+        await dialog_manager.switch_to(ServiceDistributionMenu.SERVICES_GROUPS)
+        return
+
     gateway = get_barsic_web_gateway()
 
     services_group = None
@@ -180,6 +191,7 @@ async def distribution_elements_btn_handler(
     report_map = {
         "finance_report": ReportType.GoogleReport,
         "total_by_day": ReportType.PlatAgentReport,
+        "attendance_report": ReportType.Attendance,
     }
     report_type = report_map[manager.dialog_data["report_type"]]
     response = await gateway.get_services_groups(report_type=report_type)
@@ -249,9 +261,13 @@ async def report_menu_getter(dialog_manager: DialogManager, **kwargs) -> dict[st
 
 async def services_groups_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
     services_groups = [(group.title, group.id) for group in dialog_manager.dialog_data["services_groups"]]
+    current_page = dialog_manager.dialog_data.get("services_groups_page", 0)
+    services_groups = services_groups[current_page * 20 : (current_page + 1) * 20]
+    # services_groups.append(("> Next page", "next_page"))
     return {
         "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
         "services_groups": services_groups,
+        "services_groups_page": current_page,
     }
 
 
@@ -315,6 +331,11 @@ service_distribution_menu = Dialog(
         Button(
             Const("Отчет платежного агента"),
             id="total_by_day",
+            on_click=start_btn_handler,
+        ),
+        Button(
+            Const("Отчет по количеству в разрезе дня"),
+            id="attendance_report",
             on_click=start_btn_handler,
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),

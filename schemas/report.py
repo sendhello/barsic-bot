@@ -29,6 +29,15 @@ class CorpServicesSumReportResult(BaseModel):
     detail: str | None = Field(None)
 
 
+class AttendanceReportResult(BaseModel):
+    ok: bool = Field(False)
+    local_path: str | None = Field(None)
+    yandex_public_url: AnyUrl | None = Field(None)
+    yandex_download_link: AnyUrl | None = Field(None)
+    google_report: AnyUrl | None = Field(None)
+    detail: str | None = Field(None)
+
+
 class ServicesGroup(BaseModel):
     id: UUID
     title: str

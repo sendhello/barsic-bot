@@ -39,10 +39,12 @@ class ReportType(StrEnum):
     GoogleReport = "GoogleReport"
     PlatAgentReport = "PlatAgentReport"
     ItogReport = "ItogReport"
+    Attendance = "attendance"
 
 
 REPORT_NAME_MAP = {
     "finance_report": "Финансовый отчет",
     "total_by_day": "Итоговый отчет с разбивкой",
     "purchased_goods_report": "Отчет по купленным товарам",
+    "attendance_report": "Отчет по количеству в разрезе дня",
 }

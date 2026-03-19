@@ -21,7 +21,13 @@ from constants import ADMIN_KEY, PERMISSION_ID, REPORT_NAME_MAP, ButtonID, butto
 from core.settings import settings
 from gateways.client import get_barsic_web_gateway
 from repositories.redis_repo import get_redis_repo
-from schemas.report import CorpServicesSumReportResult, FinanceReportResult, PeopleInZone, TotalByDayResult
+from schemas.report import (
+    AttendanceReportResult,
+    CorpServicesSumReportResult,
+    FinanceReportResult,
+    PeopleInZone,
+    TotalByDayResult,
+)
 from states import ReportMenu
 
 
@@ -120,18 +126,18 @@ async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwar
     else:
         use_cache_text = "Не использовать кеш"
 
-    report_name_map = {
-        "finance_report": "Финансовый отчет",
-        "total_by_day": "Итоговый отчет с разбивкой",
-        "purchased_goods_report": "Отчет по купленным товарам",
-    }
+    if dialog_manager.find("use_google").is_checked():
+        use_google_text = "Сохранять отчеты в Google"
+    else:
+        use_google_text = "Не сохранять отчеты в Google"
 
     return {
         "hide_zero_text": hide_zero_text,
         "use_yadisk_text": use_yadisk_text,
         "telegram_report_text": telegram_report_text,
         "use_cache_text": use_cache_text,
-        "report_name": report_name_map[dialog_manager.dialog_data["report_type"]],
+        "use_google_text": use_google_text,
+        "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
     }
 
 
@@ -157,8 +163,16 @@ def is_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManag
     return data["dialog_data"]["report_type"] == "purchased_goods_report"
 
 
+def is_attendance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["report_type"] == "attendance_report"
+
+
 def is_not_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] != "purchased_goods_report"
+
+
+def is_total_by_day_or_attendance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+    return data["dialog_data"]["report_type"] in ["total_by_day", "attendance_report"]
 
 
 async def run_finance_report(
@@ -208,6 +222,45 @@ async def run_purchased_goods_report(
     return CorpServicesSumReportResult.model_validate(response.json())
 
 
+async def run_attendance_report(
+    start_date: date,
+    end_date: date | None,
+    save_to_yandex: bool,
+    save_to_google: bool,
+    use_cache: bool,
+) -> AttendanceReportResult:
+    if end_date is None:
+        end_date = start_date
+
+    gateway = get_barsic_web_gateway()
+    response = await gateway.create_attendance_report(
+        start_date=start_date,
+        end_date=end_date,
+        save_to_yandex=save_to_yandex,
+        save_to_google=save_to_google,
+        use_cache=use_cache,
+    )
+    return AttendanceReportResult.model_validate(response.json())
+
+
+def get_attendance_report_details(
+    result: AttendanceReportResult,
+    save_to_google: bool,
+    save_to_yandex: bool,
+) -> str:
+    details = []
+    if save_to_google and result.google_report is not None:
+        details.append(f"Google: {result.google_report}")
+    if save_to_yandex and result.yandex_public_url is not None:
+        details.append(f"Yandex: {result.yandex_public_url}")
+    if save_to_yandex and result.yandex_download_link is not None:
+        details.append(f"Yandex (скачать): {result.yandex_download_link}")
+    if not details and result.local_path is not None:
+        details.append(f"Локальный файл: {result.local_path}")
+
+    return "\n".join(details)
+
+
 async def run_report(
     callback: CallbackQuery,
     button: Button,
@@ -221,6 +274,7 @@ async def run_report(
     hide_zero = manager.find("hide_zero").is_checked()
     telegram_report = manager.find("telegram_report").is_checked()
     use_cache = manager.find("use_cache").is_checked()
+    use_google = manager.find("use_google").is_checked()
 
     match report_type:
 
@@ -261,6 +315,19 @@ async def run_report(
             await manager.update({"report_result": f"{message}\n{detail}"})
             await manager.switch_to(ReportMenu.SHOW_REPORT)
 
+        case "attendance_report":
+            result = await run_attendance_report(
+                start_date=start_date,
+                end_date=end_date,
+                save_to_yandex=use_yadisk,
+                save_to_google=use_google,
+                use_cache=use_cache,
+            )
+            message = f"{'Отчет по количеству в разрезе дня сформирован' if result.ok else 'Ошибка'}"
+            detail = get_attendance_report_details(result, use_google, use_yadisk) if result.ok else result.detail
+            await manager.update({"report_result": f"{message}\n{detail}"})
+            await manager.switch_to(ReportMenu.SHOW_REPORT)
+
         case _:
             logger.error(f"Неверный тип отчета: {report_type}")
             await manager.switch_to(ReportMenu.CHOOSE_REPORT)
@@ -294,6 +361,12 @@ report_menu = Dialog(
             Const("По купленным товарам"),
             id="purchased_goods_report",
             on_click=choose_report,
+        ),
+        Button(
+            Const("Отчет по количеству в разрезе дня"),
+            id="attendance_report",
+            on_click=choose_report,
+            when=is_only_admin,
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
         state=ReportMenu.START,
@@ -332,6 +405,20 @@ report_menu = Dialog(
             when=is_purchased_goods_report,
         ),
         Checkbox(
+            checked_text=Const("[x] Сохранять в YandexDisk"),
+            unchecked_text=Const("[ ] Не сохранять в YandexDisk"),
+            id="use_yadisk",
+            default=False,
+            when=is_attendance_report,
+        ),
+        Checkbox(
+            checked_text=Const("[x] Сохранять в Google"),
+            unchecked_text=Const("[ ] Не сохранять в Google"),
+            id="use_google",
+            default=True,
+            when=is_attendance_report,
+        ),
+        Checkbox(
             checked_text=Const("[x] Отправлять в Telegram"),
             unchecked_text=Const("[ ] Не отправлять в Telegram"),
             id="telegram_report",
@@ -343,7 +430,7 @@ report_menu = Dialog(
             unchecked_text=Const("[ ] Не использовать кеш"),
             id="use_cache",
             default=True,
-            when=is_total_by_day,
+            when=is_total_by_day_or_attendance_report,
         ),
         Button(
             Const("📝 Выбрать услуги"),
