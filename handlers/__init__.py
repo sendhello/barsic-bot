@@ -7,6 +7,7 @@ from constants import ADMIN_KEY, USER_KEY
 from filters.auth import PermissionFilter
 from filters.chat_type import ChatTypeFilter
 from middlewares.blocked_user import BlockerUserMiddleware
+from middlewares.chat_action import ChatActionMiddleware
 
 from .info_menu import info_menu
 from .main_menu import main_menu
@@ -36,6 +37,8 @@ user_router.callback_query.filter(PermissionFilter(roles=[ADMIN_KEY, USER_KEY]))
 router.include_router(user_router)
 
 router.message.middleware.register(BlockerUserMiddleware())
+router.message.middleware.register(ChatActionMiddleware())
+router.callback_query.middleware.register(ChatActionMiddleware())
 router.message.filter(ChatTypeFilter(chat_type="private"))
 
 
