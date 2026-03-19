@@ -105,10 +105,7 @@ async def on_end_date_selected(callback: CallbackQuery, widget, manager: DialogM
 
 
 async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
-    if dialog_manager.find("hide_zero").is_checked():
-        hide_zero_text = "Скрывать нули"
-    else:
-        hide_zero_text = "Не скрывать нули"
+    hide_zero_text = "Скрывать нули" if dialog_manager.find("hide_zero").is_checked() else "Не скрывать нули"
 
     if dialog_manager.find("use_yadisk").is_checked():
         use_yadisk_text = "Сохранять отчеты в YandexDisk"
@@ -120,10 +117,7 @@ async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwar
     else:
         telegram_report_text = "Не отправлять сообщение в Telegram"
 
-    if dialog_manager.find("use_cache").is_checked():
-        use_cache_text = "Использовать кеш"
-    else:
-        use_cache_text = "Не использовать кеш"
+    use_cache_text = "Использовать кеш" if dialog_manager.find("use_cache").is_checked() else "Не использовать кеш"
 
     if dialog_manager.find("use_google").is_checked():
         use_google_text = "Сохранять отчеты в Google"

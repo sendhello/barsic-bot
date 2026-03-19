@@ -20,7 +20,4 @@ class PermissionFilter(BaseFilter):
         if permission is None:
             return False
 
-        if permission not in self.roles:
-            return False
-
-        return True
+        return permission in self.roles

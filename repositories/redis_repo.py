@@ -50,7 +50,7 @@ class RedisRepo:
         logger.info(f"Checking if key {key} exists")
         return bool(await self.redis.sismember(key, value))
 
-    async def is_limit_exceeded(self, user_id: int):
+    async def is_limit_exceeded(self, user_id: int) -> bool:
         """Проверка лимита ввода пароля.
 
         Проверяет сколько вводов пароля за текущие сутки сделал пользователь
@@ -69,10 +69,7 @@ class RedisRepo:
         pipe.expire(key, 60 * 60 * 24)
         result = await pipe.execute()
         request_number = result[0]
-        if request_number > settings.password_limit:
-            return True
-
-        return False
+        return request_number > settings.password_limit
 
 
 async def get_redis_repo() -> RedisRepo:
