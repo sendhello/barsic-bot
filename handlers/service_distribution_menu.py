@@ -138,10 +138,10 @@ def _get_services_groups_total_pages(services_groups: list[ServicesGroup]) -> in
     return ceil(len(services_groups) / SERVICES_GROUPS_PAGE_SIZE)
 
 
-def _get_current_services_groups_page(dialog_manager: DialogManager) -> tuple[int, int]:
+def _get_current_services_groups_page(dialog_manager: DialogManager, page_key: str) -> tuple[int, int]:
     services_groups = dialog_manager.dialog_data.get("services_groups", [])
     total_pages = _get_services_groups_total_pages(services_groups)
-    current_page = dialog_manager.dialog_data.get("services_groups_page", 0)
+    current_page = dialog_manager.dialog_data.get(page_key, 0)
     current_page = max(0, min(current_page, total_pages - 1))
     return current_page, total_pages
 
@@ -151,7 +151,7 @@ async def services_groups_prev_page_btn_handler(
     button: Button,
     manager: DialogManager,
 ):
-    current_page, _ = _get_current_services_groups_page(manager)
+    current_page, _ = _get_current_services_groups_page(manager, "services_groups_page")
     if current_page <= 0:
         return
     await manager.update({"services_groups_page": current_page - 1})
@@ -162,7 +162,7 @@ async def services_groups_first_page_btn_handler(
     button: Button,
     manager: DialogManager,
 ):
-    current_page, _ = _get_current_services_groups_page(manager)
+    current_page, _ = _get_current_services_groups_page(manager, "services_groups_page")
     if current_page <= 0:
         return
     await manager.update({"services_groups_page": 0})
@@ -173,7 +173,7 @@ async def services_groups_next_page_btn_handler(
     button: Button,
     manager: DialogManager,
 ):
-    current_page, total_pages = _get_current_services_groups_page(manager)
+    current_page, total_pages = _get_current_services_groups_page(manager, "services_groups_page")
     if current_page >= total_pages - 1:
         return
     await manager.update({"services_groups_page": current_page + 1})
@@ -184,10 +184,54 @@ async def services_groups_last_page_btn_handler(
     button: Button,
     manager: DialogManager,
 ):
-    current_page, total_pages = _get_current_services_groups_page(manager)
+    current_page, total_pages = _get_current_services_groups_page(manager, "services_groups_page")
     if current_page >= total_pages - 1:
         return
     await manager.update({"services_groups_page": total_pages - 1})
+
+
+async def add_elements_services_groups_prev_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_services_groups_page(manager, "add_elements_services_groups_page")
+    if current_page <= 0:
+        return
+    await manager.update({"add_elements_services_groups_page": current_page - 1})
+
+
+async def add_elements_services_groups_first_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, _ = _get_current_services_groups_page(manager, "add_elements_services_groups_page")
+    if current_page <= 0:
+        return
+    await manager.update({"add_elements_services_groups_page": 0})
+
+
+async def add_elements_services_groups_next_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_services_groups_page(manager, "add_elements_services_groups_page")
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"add_elements_services_groups_page": current_page + 1})
+
+
+async def add_elements_services_groups_last_page_btn_handler(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+):
+    current_page, total_pages = _get_current_services_groups_page(manager, "add_elements_services_groups_page")
+    if current_page >= total_pages - 1:
+        return
+    await manager.update({"add_elements_services_groups_page": total_pages - 1})
 
 
 async def services_groups_radio_handler(
@@ -275,6 +319,7 @@ async def distribution_elements_btn_handler(
     await manager.update(
         {
             "services_groups": services_groups,
+            "add_elements_services_groups_page": 0,
         }
     )
     await manager.switch_to(ServiceDistributionMenu.ADD_ELEMENTS)
@@ -336,7 +381,7 @@ async def report_menu_getter(dialog_manager: DialogManager, **kwargs) -> dict[st
 
 
 async def services_groups_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
-    current_page, total_pages = _get_current_services_groups_page(dialog_manager)
+    current_page, total_pages = _get_current_services_groups_page(dialog_manager, "services_groups_page")
     services_groups = [(group.title, group.id) for group in dialog_manager.dialog_data["services_groups"]]
     services_groups = services_groups[
         current_page * SERVICES_GROUPS_PAGE_SIZE : (current_page + 1) * SERVICES_GROUPS_PAGE_SIZE
@@ -375,10 +420,19 @@ async def distribution_elements_getter(dialog_manager: DialogManager, **kwargs) 
 
 
 async def add_elements_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
+    current_page, total_pages = _get_current_services_groups_page(dialog_manager, "add_elements_services_groups_page")
+    services_groups = [(group.title, group.id) for group in dialog_manager.dialog_data["services_groups"]]
+    services_groups = services_groups[
+        current_page * SERVICES_GROUPS_PAGE_SIZE : (current_page + 1) * SERVICES_GROUPS_PAGE_SIZE
+    ]
+
     return {
         "report_name": REPORT_NAME_MAP[dialog_manager.dialog_data["report_type"]],
-        "services_groups": [(group.title, group.id) for group in dialog_manager.dialog_data["services_groups"]],
+        "services_groups": services_groups,
         "new_elements": dialog_manager.dialog_data["new_elements"],
+        "add_elements_services_groups_page": current_page,
+        "add_elements_services_groups_page_human": current_page + 1,
+        "add_elements_services_groups_total_pages": total_pages,
     }
 
 
@@ -406,6 +460,14 @@ def has_services_groups_prev_page(data: dict, widget: Button, manager: DialogMan
 
 def has_services_groups_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
     return data["services_groups_page"] < data["services_groups_total_pages"] - 1
+
+
+def has_add_elements_services_groups_prev_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["add_elements_services_groups_page"] > 0
+
+
+def has_add_elements_services_groups_next_page(data: dict, widget: Button, manager: DialogManager) -> bool:
+    return data["add_elements_services_groups_page"] < data["add_elements_services_groups_total_pages"] - 1
 
 
 service_distribution_menu = Dialog(
@@ -502,6 +564,35 @@ service_distribution_menu = Dialog(
                 item_id_getter=operator.itemgetter(1),
                 items="services_groups",
                 on_click=add_elements_radio_handler,
+            ),
+        ),
+        Format(
+            "Страница {add_elements_services_groups_page_human}/{add_elements_services_groups_total_pages}"
+        ),
+        Row(
+            Button(
+                Const("⏮"),
+                id="add_elements_services_groups_first_page",
+                on_click=add_elements_services_groups_first_page_btn_handler,
+                when=has_add_elements_services_groups_prev_page,
+            ),
+            Button(
+                Const("◀"),
+                id="add_elements_services_groups_prev_page",
+                on_click=add_elements_services_groups_prev_page_btn_handler,
+                when=has_add_elements_services_groups_prev_page,
+            ),
+            Button(
+                Const("▶"),
+                id="add_elements_services_groups_next_page",
+                on_click=add_elements_services_groups_next_page_btn_handler,
+                when=has_add_elements_services_groups_next_page,
+            ),
+            Button(
+                Const("⏭"),
+                id="add_elements_services_groups_last_page",
+                on_click=add_elements_services_groups_last_page_btn_handler,
+                when=has_add_elements_services_groups_next_page,
             ),
         ),
         Cancel(text=Const(button_text(ButtonID.CANCEL))),
