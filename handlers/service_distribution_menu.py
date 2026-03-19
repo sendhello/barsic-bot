@@ -679,9 +679,7 @@ service_distribution_menu = Dialog(
                 on_click=add_elements_radio_handler,
             ),
         ),
-        Format(
-            "Страница {add_elements_services_groups_page_human}/{add_elements_services_groups_total_pages}"
-        ),
+        Format("Страница {add_elements_services_groups_page_human}/{add_elements_services_groups_total_pages}"),
         Row(
             Button(
                 Const("⏮"),
