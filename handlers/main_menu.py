@@ -13,7 +13,6 @@ from core.settings import settings
 from repositories.redis_repo import get_redis_repo
 from states import InfoMenu, MainMenu, ReportMenu, ServiceDistributionMenu
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,13 +33,13 @@ async def get_password(message: Message, dialog: DialogProtocol, manager: Dialog
         await redis_repo.put_to_cache(key=f"{PERMISSION_ID}:{user_id}", data=ADMIN_KEY)
         manager.dialog_data["permission"] = ADMIN_KEY
         await manager.next()
-        return None
+        return
 
     if message.text == settings.user_password.get_secret_value():
         await redis_repo.put_to_cache(key=f"{PERMISSION_ID}:{user_id}", data=USER_KEY)
         manager.dialog_data["permission"] = USER_KEY
         await manager.next()
-        return None
+        return
 
     if await redis_repo.is_limit_exceeded(user_id):
         await message.answer("Превышено количество попыток ввода пароля. Пользователь заблокирован.")
@@ -68,12 +67,12 @@ async def logout(
 
 main_menu = Dialog(
     Window(
-        Format("Здравствуйте, {event.from_user.username}! \n\n" "Введите пароль\n"),
+        Format("Здравствуйте, {event.from_user.username}! \n\nВведите пароль\n"),
         MessageInput(get_password),
         state=MainMenu.AUTHORIZATION,
     ),
     Window(
-        Format("Здравствуйте, {event.from_user.username}! \n\n" "Выберите действие\n"),
+        Format("Здравствуйте, {event.from_user.username}! \n\nВыберите действие\n"),
         Start(
             Const("ℹ️ Инфо"),
             id="info",

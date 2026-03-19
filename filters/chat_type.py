@@ -3,7 +3,6 @@ import logging
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -15,5 +14,4 @@ class ChatTypeFilter(BaseFilter):
         if isinstance(self.chat_type, str):
             logger.warning(f"{message.chat.type=}")
             return message.chat.type == self.chat_type
-        else:
-            return message.chat.type in self.chat_type
+        return message.chat.type in self.chat_type

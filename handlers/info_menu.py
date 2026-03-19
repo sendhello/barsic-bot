@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
@@ -11,7 +11,6 @@ from constants import ButtonID, button_text
 from gateways.client import get_barsic_web_gateway
 from schemas.report import PeopleInZone
 from states import InfoMenu
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ async def get_client_count() -> PeopleInZone:
     return PeopleInZone.model_validate(response.json())
 
 
-def is_not_people_in_zone(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_not_people_in_zone(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["info_type"] != "people_in_zone"
 
 

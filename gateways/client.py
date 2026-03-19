@@ -10,12 +10,10 @@ from core.settings import settings
 from gateways.base import BaseGateway
 from schemas.report import ServicesGroup
 
-
 logger = logging.getLogger(__name__)
 
 
 class BarsicWebGateway(BaseGateway):
-
     async def client_count(self) -> Response:
         return await self.post(url="/api/v1/reports/client_count")
 
@@ -128,7 +126,7 @@ class BarsicWebGateway(BaseGateway):
 
     async def add_service_element(self, group_id: UUID, new_elements: list[str]) -> Response:
         response = await self.post(
-            url=f"/api/v1/report_group/{str(group_id)}/add_elements/",
+            url=f"/api/v1/report_group/{group_id!s}/add_elements/",
             data=orjson.dumps(new_elements),
         )
         logger.debug(f"Response: {response.json()}")
@@ -140,7 +138,7 @@ class BarsicWebGateway(BaseGateway):
         return response
 
     async def delete_service_element(self, service_element_id: UUID) -> Response:
-        response = await self.delete(url=f"/api/v1/report_element/{str(service_element_id)}")
+        response = await self.delete(url=f"/api/v1/report_element/{service_element_id!s}")
         logger.debug(f"Response: {response.json()}")
         try:
             response.raise_for_status()

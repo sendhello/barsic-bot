@@ -11,7 +11,6 @@ from constants import PERMISSION_ID
 from repositories.redis_repo import get_redis_repo
 from states import InfoMenu, MainMenu, ReportMenu, ServiceDistributionMenu
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +29,7 @@ async def start(message: Message, dialog_manager: DialogManager):
     if permission is None:
         logger.info(f"User {user_id} has no permission. Trying authorization...")
         await dialog_manager.start(MainMenu.AUTHORIZATION)
-        return None
+        return
 
     await dialog_manager.start(MainMenu.START, data={"permission": permission})
 
