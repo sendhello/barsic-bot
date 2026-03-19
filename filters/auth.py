@@ -6,7 +6,6 @@ from aiogram.types import Message
 from constants import PERMISSION_ID
 from repositories.redis_repo import get_redis_repo
 
-
 logger = logging.getLogger(__name__)
 
 

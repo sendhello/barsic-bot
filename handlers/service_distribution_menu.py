@@ -16,7 +16,6 @@ from gateways.client import get_barsic_web_gateway
 from schemas.report import ReportElement, ServicesGroup
 from states import ServiceDistributionMenu
 
-
 logger = logging.getLogger(__name__)
 MIN_PAGE_SIZE = 1
 

@@ -10,7 +10,6 @@ from core.settings import settings
 from db import redis_db
 from handlers import router
 
-
 logger = logging.getLogger(__name__)
 
 

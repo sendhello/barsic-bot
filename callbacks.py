@@ -1,7 +1,6 @@
 API_URI = ""
 from aiogram import F, Router
 
-
 # from library.aiogramcalendar import calendar_callback, process_calendar_selection, create_calendar
 
 

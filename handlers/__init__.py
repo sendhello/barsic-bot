@@ -15,7 +15,6 @@ from .report_menu import report_menu
 from .service_distribution_menu import service_distribution_menu
 from .start import router as start_router
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -1,10 +1,10 @@
 from abc import ABC
+from collections.abc import Callable, Mapping
 from functools import partial
-from typing import Callable, Mapping, ParamSpec, Type, TypeVar
+from typing import ParamSpec, TypeVar
 
 import pydantic
 from httpx import AsyncClient, Response
-
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -46,6 +46,6 @@ class BaseGateway(ABC):
         await self._client.aclose()
 
     @staticmethod
-    def parse_response_as(schema: Type[T], response: Response) -> T:
+    def parse_response_as(schema: type[T], response: Response) -> T:
         response.raise_for_status()
         return pydantic.TypeAdapter.validate_python(schema, response.json())

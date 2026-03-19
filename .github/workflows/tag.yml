@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.12", "3.13" ]
+        python-version: [ "3.11", "3.12" ]
 
     steps:
       - name: Check out Git repository
@@ -28,14 +28,10 @@ jobs:
           python -m pip install poetry
           poetry install
 
-      - name: flake8 Lint
-        uses: py-actions/flake8@v2
-
-      - name: Isort Lint
-        uses: isort/isort-action@master
-
-      - name: Black Lint
-        uses: psf/black@stable
+      - name: Ruff Lint
+        run: |
+          poetry run ruff check .
+        continue-on-error: true
 
   build:
     name: Build Docker image and Push

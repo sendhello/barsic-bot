@@ -1,6 +1,5 @@
 from enum import StrEnum, auto
 
-
 USER_KEY = "user"
 ADMIN_KEY = "admin"
 PERMISSION_ID = "bot_permission"

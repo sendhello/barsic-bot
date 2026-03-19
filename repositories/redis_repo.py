@@ -7,7 +7,6 @@ from constants import LIMIT_ID
 from core.settings import settings
 from db.redis_db import get_redis
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +62,7 @@ class RedisRepo:
             return False
 
         today = date.today()
-        key = f"{LIMIT_ID}:{str(user_id)}:{today}"
+        key = f"{LIMIT_ID}:{user_id!s}:{today}"
 
         pipe = self.redis.pipeline()
         pipe.incr(key, 1)

@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from typing import Any, Dict
+from typing import Any
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
@@ -29,7 +29,6 @@ from schemas.report import (
     TotalByDayResult,
 )
 from states import ReportMenu
-
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +104,7 @@ async def on_end_date_selected(callback: CallbackQuery, widget, manager: DialogM
     await manager.switch_to(ReportMenu.CHOOSE_REPORT)
 
 
-async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwargs) -> Dict[str, Any]:
+async def finance_report_checkboxes_getter(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
     if dialog_manager.find("hide_zero").is_checked():
         hide_zero_text = "Скрывать нули"
     else:
@@ -147,31 +146,31 @@ async def get_client_count() -> PeopleInZone:
     return PeopleInZone.model_validate(response.json())
 
 
-def is_only_admin(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_only_admin(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["user_permission"] == ADMIN_KEY
 
 
-def is_finance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_finance_report(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "finance_report"
 
 
-def is_total_by_day(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_total_by_day(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "total_by_day"
 
 
-def is_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_purchased_goods_report(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "purchased_goods_report"
 
 
-def is_attendance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_attendance_report(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] == "attendance_report"
 
 
-def is_not_purchased_goods_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_not_purchased_goods_report(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] != "purchased_goods_report"
 
 
-def is_total_by_day_or_attendance_report(data: Dict, widget: Whenable, manager: DialogManager) -> bool:
+def is_total_by_day_or_attendance_report(data: dict, widget: Whenable, manager: DialogManager) -> bool:
     return data["dialog_data"]["report_type"] in ["total_by_day", "attendance_report"]
 
 
@@ -277,7 +276,6 @@ async def run_report(
     use_google = manager.find("use_google").is_checked()
 
     match report_type:
-
         case "finance_report":
             result = await run_finance_report(
                 start_date=start_date,
